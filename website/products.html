@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Matrica Networks Pvt Ltd</title>
+    <meta name="description" content="Explore our comprehensive cybersecurity product portfolio including threat intelligence platforms, endpoint protection, and security monitoring solutions.">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">MATRICA</a>
+            
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="services.html">Services</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="resources.html">Resources</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            
+            <div class="nav-controls">
+                <button class="theme-toggle" title="Toggle theme">🌙</button>
+                <a href="admin.html" class="admin-btn">Admin Login</a>
+            </div>
+            
+            <button class="menu-toggle">☰</button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero" style="min-height: 60vh;">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>Cybersecurity Products</h1>
+                    <p>Advanced security solutions designed to protect your organization from sophisticated cyber threats.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Grid -->
+        <section class="section">
+            <div class="container">
+                <h2 class="section-title">Our Product Portfolio</h2>
+                <div class="card-grid" id="products-container">
+                    <!-- Products will be loaded dynamically -->
+                    <div class="card">
+                        <div style="width: 100%; height: 200px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                            Loading Products...
+                        </div>
+                        <h3>Loading...</h3>
+                        <p>Product information is being loaded from our database.</p>
+                        <button class="btn" disabled>Please wait</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Categories -->
+        <section class="section">
+            <div class="container">
+                <h2 class="section-title">Product Categories</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🛡️ Threat Intelligence</h3>
+                        <p>Advanced threat detection and analysis platforms powered by AI and machine learning to identify and neutralize cyber threats in real-time.</p>
+                        <ul style="color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Real-time threat detection</li>
+                            <li>AI-powered analysis</li>
+                            <li>Threat hunting capabilities</li>
+                            <li>IOC management</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>🔍 Security Monitoring</h3>
+                        <p>Comprehensive security monitoring solutions providing 24/7 visibility into your security infrastructure and immediate threat response.</p>
+                        <ul style="color: var(--text-secondary); margin-top: 1rem;">
+                            <li>24/7 SOC monitoring</li>
+                            <li>SIEM integration</li>
+                            <li>Incident response</li>
+                            <li>Compliance reporting</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>🔒 Endpoint Protection</h3>
+                        <p>Next-generation endpoint protection and response solutions to secure all devices and endpoints across your organization.</p>
+                        <ul style="color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Advanced malware protection</li>
+                            <li>Behavioral analysis</li>
+                            <li>Device control</li>
+                            <li>Remote remediation</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>📊 Compliance Management</h3>
+                        <p>Automated compliance management solutions to help organizations meet regulatory requirements and maintain security standards.</p>
+                        <ul style="color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Automated assessments</li>
+                            <li>Policy management</li>
+                            <li>Audit reporting</li>
+                            <li>Risk scoring</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>🔧 Security Tools</h3>
+                        <p>Specialized security tools and utilities for penetration testing, vulnerability assessment, and security operations.</p>
+                        <ul style="color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Vulnerability scanners</li>
+                            <li>Penetration testing tools</li>
+                            <li>Security automation</li>
+                            <li>Forensic analysis</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>☁️ Cloud Security</h3>
+                        <p>Cloud-native security solutions designed to protect cloud infrastructure, applications, and data across multi-cloud environments.</p>
+                        <ul style="color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Cloud workload protection</li>
+                            <li>Container security</li>
+                            <li>API security</li>
+                            <li>Cloud compliance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Features -->
+        <section class="section">
+            <div class="container">
+                <h2 class="section-title">Why Choose Our Products?</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🚀 Cutting-Edge Technology</h3>
+                        <p>Our products leverage the latest advancements in AI, machine learning, and cybersecurity research to provide superior protection against evolving threats.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🔧 Easy Integration</h3>
+                        <p>Seamless integration with existing security infrastructure and popular security tools through comprehensive APIs and standard protocols.</p>
+                    </div>
+                    <div class="card">
+                        <h3>📈 Scalable Solutions</h3>
+                        <p>Products designed to scale with your organization, from small businesses to large enterprises, with flexible licensing and deployment options.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🎯 Expert Support</h3>
+                        <p>24/7 technical support from cybersecurity experts, comprehensive documentation, and professional services for implementation and optimization.</p>
+                    </div>
+                    <div class="card">
+                        <h3>📊 Real-Time Analytics</h3>
+                        <p>Advanced analytics and reporting capabilities providing actionable insights into your security posture and threat landscape.</p>
+                    </div>
+                    <div class="card">
+                        <h3>🔄 Continuous Updates</h3>
+                        <p>Regular updates and enhancements to stay ahead of emerging threats, with automatic threat intelligence feeds and signature updates.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deployment Options -->
+        <section class="section">
+            <div class="container">
+                <h2 class="section-title">Deployment Options</h2>
+                <div class="card-grid">
+                    <div class="card text-center">
+                        <h3>☁️ Cloud-Based</h3>
+                        <p>Fully managed cloud solutions with rapid deployment, automatic scaling, and minimal infrastructure requirements.</p>
+                        <ul style="text-align: left; color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Quick deployment</li>
+                            <li>Automatic updates</li>
+                            <li>Global availability</li>
+                            <li>Pay-as-you-scale</li>
+                        </ul>
+                    </div>
+                    <div class="card text-center">
+                        <h3>🏢 On-Premises</h3>
+                        <p>Traditional on-premises deployment for organizations requiring complete control over their security infrastructure and data.</p>
+                        <ul style="text-align: left; color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Complete control</li>
+                            <li>Data sovereignty</li>
+                            <li>Custom configuration</li>
+                            <li>Air-gapped deployment</li>
+                        </ul>
+                    </div>
+                    <div class="card text-center">
+                        <h3>🔄 Hybrid</h3>
+                        <p>Flexible hybrid deployment combining cloud and on-premises components for optimal security and performance.</p>
+                        <ul style="text-align: left; color: var(--text-secondary); margin-top: 1rem;">
+                            <li>Best of both worlds</li>
+                            <li>Flexible architecture</li>
+                            <li>Gradual migration</li>
+                            <li>Cost optimization</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="section">
+            <div class="container">
+                <div class="card text-center" style="max-width: 800px; margin: 0 auto;">
+                    <h2>Ready to Explore Our Products?</h2>
+                    <p>Contact our product specialists to learn more about our cybersecurity solutions and find the right products for your organization's needs.</p>
+                    <div class="mt-2">
+                        <a href="contact.html" class="btn">Request Demo</a>
+                        <a href="services.html" class="btn btn-secondary">View Services</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Matrica Networks Pvt Ltd. All rights reserved. | Securing the digital frontier.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

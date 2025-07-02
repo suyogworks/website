@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Matrica Networks Pvt Ltd</title>
+    <meta name="description" content="Admin login portal for Matrica Networks content management system.">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">MATRICA</a>
+            
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="services.html">Services</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="resources.html">Resources</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            
+            <div class="nav-controls">
+                <button class="theme-toggle" title="Toggle theme">🌙</button>
+            </div>
+            
+            <button class="menu-toggle">☰</button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Login Section -->
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="card" style="max-width: 400px; margin: 0 auto;">
+                        <h1 style="text-align: center; margin-bottom: 2rem;">Admin Login</h1>
+                        
+                        <form id="admin-login-form">
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input type="text" id="username" name="username" required autocomplete="username">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <input type="password" id="password" name="password" required autocomplete="current-password">
+                            </div>
+                            
+                            <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">
+                                Login to Dashboard
+                            </button>
+                        </form>
+                        
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); text-align: center;">
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                                🔒 Secure admin portal for authorized personnel only
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Security Notice -->
+        <section class="section">
+            <div class="container">
+                <div class="card text-center" style="max-width: 600px; margin: 0 auto;">
+                    <h2>🛡️ Security Notice</h2>
+                    <p>This is a restricted area for authorized administrators only. All access attempts are logged and monitored.</p>
+                    <div style="margin-top: 2rem;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;">
+                            <div>
+                                <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">🔐 Access Control</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary);">Multi-factor authentication required</p>
+                            </div>
+                            <div>
+                                <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">📊 Activity Monitoring</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary);">All actions are logged and audited</p>
+                            </div>
+                            <div>
+                                <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">🔒 Data Protection</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary);">Encrypted data transmission</p>
+                            </div>
+                            <div>
+                                <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">⏰ Session Management</h4>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary);">Automatic session timeout</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Help Section -->
+        <section class="section">
+            <div class="container">
+                <div class="card-grid">
+                    <div class="card text-center">
+                        <h3>🆘 Need Help?</h3>
+                        <p>If you're having trouble accessing the admin panel, contact the IT support team.</p>
+                        <a href="mailto:support@matrica-networks.com" class="btn btn-secondary">Contact Support</a>
+                    </div>
+                    <div class="card text-center">
+                        <h3>🔑 Forgot Password?</h3>
+                        <p>Password reset requests must be submitted through the IT helpdesk for security verification.</p>
+                        <a href="mailto:helpdesk@matrica-networks.com" class="btn btn-secondary">Reset Password</a>
+                    </div>
+                    <div class="card text-center">
+                        <h3>📋 Access Request</h3>
+                        <p>New admin access requests require approval from the security team and management.</p>
+                        <a href="mailto:security@matrica-networks.com" class="btn btn-secondary">Request Access</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Matrica Networks Pvt Ltd. All rights reserved. | Securing the digital frontier.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/main.js"></script>
+    
+    <script>
+        // Admin login functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('admin-login-form');
+            
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleAdminLogin);
+            }
+        });
+        
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            // Show loading state
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Logging in...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/cgi-bin/auth_api.py', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Store login state (simple approach for demo)
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    localStorage.setItem('adminUser', JSON.stringify(result.user));
+                    
+                    // Redirect to dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert('Login failed: ' + (result.error || 'Invalid credentials'));
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: Network error. Please try again.');
+            } finally {
+                // Reset button state
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+    
+    <style>
+        /* Additional styles for login form */
+        .form-group input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Security indicators */
+        .card h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Matrica Networks Pvt Ltd</title>
+    <meta name="description" content="Admin dashboard for managing Matrica Networks website content and data.">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">MATRICA ADMIN</a>
+            
+            <div class="nav-controls">
+                <button class="theme-toggle" title="Toggle theme">🌙</button>
+                <button id="logout-btn" class="btn btn-danger">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <div class="container">
+                <h1>Admin Dashboard</h1>
+                <p>Manage website content and view analytics</p>
+            </div>
+        </div>
+
+        <!-- Admin Navigation -->
+        <div class="container">
+            <div class="admin-nav">
+                <button data-section="contacts" class="active">📬 Contact Messages</button>
+                <button data-section="team">👥 Team Management</button>
+                <button data-section="careers">💼 Career Opportunities</button>
+                <button data-section="resources">📚 Resources</button>
+                <button data-section="products">📦 Product Management</button>
+            </div>
+        </div>
+
+        <!-- Admin Sections -->
+        <div class="container">
+            <!-- Contacts Section -->
+            <div id="contacts-section" class="admin-section active">
+                <h2>Contact Form Submissions</h2>
+                <div id="contacts-list">
+                    <p class="text-center">Loading contact submissions...</p>
+                </div>
+            </div>
+
+            <!-- Team Section -->
+            <div id="team-section" class="admin-section">
+                <h2>Team Management</h2>
+                <div id="team-list">
+                    <p class="text-center">Loading team members...</p>
+                </div>
+            </div>
+
+            <!-- Careers Section -->
+            <div id="careers-section" class="admin-section">
+                <h2>Career Opportunities</h2>
+                <div id="careers-list">
+                    <p class="text-center">Loading career opportunities...</p>
+                </div>
+            </div>
+
+            <!-- Resources Section -->
+            <div id="resources-section" class="admin-section">
+                <h2>Resources Management</h2>
+                <div id="resources-list">
+                    <p class="text-center">Loading resources...</p>
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <div id="products-section" class="admin-section">
+                <h2>Product Management</h2>
+                <div id="products-list">
+                    <p class="text-center">Loading products...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Team Modal -->
+    <div id="team-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Team Member</h3>
+                <button class="modal-close" onclick="dashboard.closeModal()">&times;</button>
+            </div>
+            <form id="team-form" onsubmit="handleTeamForm(event)">
+                <div class="form-group">
+                    <label for="team-name">Name *</label>
+                    <input type="text" id="team-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="team-title">Title *</label>
+                    <input type="text" id="team-title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="team-bio">Bio</label>
+                    <textarea id="team-bio" name="bio" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="team-photo-url">Photo URL</label>
+                    <input type="url" id="team-photo-url" name="photo_url" placeholder="https://example.com/photo.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="team-photo-file">Or Upload Photo</label>
+                    <input type="file" id="team-photo-file" name="photo" accept="image/*">
+                    <small class="text-muted">Supported formats: JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn">Add Team Member</button>
+                    <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Career Modal -->
+    <div id="career-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Career Opportunity</h3>
+                <button class="modal-close" onclick="dashboard.closeModal()">&times;</button>
+            </div>
+            <form id="career-form" onsubmit="handleCareerForm(event)">
+                <div class="form-group">
+                    <label for="career-title">Job Title *</label>
+                    <input type="text" id="career-title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="career-description">Description *</label>
+                    <textarea id="career-description" name="description" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="career-experience">Experience Required (years)</label>
+                    <input type="number" id="career-experience" name="experience_required" min="0" max="20" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="career-location">Location *</label>
+                    <select id="career-location" name="location" required>
+                        <option value="">Select location</option>
+                        <option value="Remote">Remote</option>
+                        <option value="Hybrid">Hybrid</option>
+                        <option value="Office">Office</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn">Add Career Opportunity</button>
+                    <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resource Modal -->
+    <div id="resource-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Resource</h3>
+                <button class="modal-close" onclick="dashboard.closeModal()">&times;</button>
+            </div>
+            <form id="resource-form" onsubmit="handleResourceForm(event)">
+                <div class="form-group">
+                    <label for="resource-title">Title *</label>
+                    <input type="text" id="resource-title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="resource-type">Type *</label>
+                    <select id="resource-type" name="type" required>
+                        <option value="">Select type</option>
+                        <option value="Blog">Blog</option>
+                        <option value="Case Study">Case Study</option>
+                        <option value="Technical Aspect">Technical Aspect</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="resource-content">Content *</label>
+                    <textarea id="resource-content" name="content" rows="6" required placeholder="Enter content or description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="resource-file">Upload File (Optional)</label>
+                    <input type="file" id="resource-file" name="file" accept=".pdf,.doc,.docx,.txt">
+                    <small class="text-muted">Supported formats: PDF, DOC, DOCX, TXT (max 10MB)</small>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn">Add Resource</button>
+                    <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Product</h3>
+                <button class="modal-close" onclick="dashboard.closeModal()">&times;</button>
+            </div>
+            <form id="product-form" onsubmit="handleProductForm(event)">
+                <div class="form-group">
+                    <label for="product-name">Product Name *</label>
+                    <input type="text" id="product-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-description">Description *</label>
+                    <textarea id="product-description" name="description" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="product-logo">Logo URL</label>
+                    <input type="url" id="product-logo" name="logo_url" placeholder="https://example.com/logo.png">
+                </div>
+                <div class="form-group">
+                    <label for="product-logo-file">Or Upload Logo</label>
+                    <input type="file" id="product-logo-file" name="logo" accept="image/*">
+                    <small class="text-muted">Supported formats: JPG, PNG, GIF, SVG (max 5MB)</small>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn">Add Product</button>
+                    <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Matrica Networks Pvt Ltd. All rights reserved. | Admin Dashboard</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+    
+    <script>
+        // Check authentication before loading dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+            
+            if (!isLoggedIn) {
+                alert('Please log in to access the admin dashboard.');
+                window.location.href = 'admin.html';
+                return;
+            }
+            
+            // Initialize dashboard
+            window.dashboard = new AdminDashboard();
+            
+            // Setup logout functionality
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    localStorage.removeItem('adminLoggedIn');
+                    localStorage.removeItem('adminUser');
+                    window.location.href = 'admin.html';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
