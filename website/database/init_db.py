@@ -70,8 +70,40 @@ def init_database():
             logo_url TEXT
         )
     ''')
+
+    # Create employees table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            designation TEXT,
+            profile_picture_url TEXT,
+            email TEXT UNIQUE,
+            phone TEXT
+            -- is_admin BOOLEAN DEFAULT FALSE -- Decided against for now, current admin is separate
+        )
+    ''')
+
+    # Create company_handbook table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS company_handbook (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, -- Assuming only one handbook, but PK is good practice
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL UNIQUE, -- Path to the uploaded PDF
+            uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
-    # Insert sample data
+    # Placeholder for future tables related to Employee Management System
+    # tasks table
+    # leave_requests table
+    # attendance table
+    # employee_documents table (Aadhaar, PAN, certificates)
+    # education_history table
+
+    # Insert sample data (if any for new tables, or adjust existing)
     insert_sample_data(cursor)
     
     conn.commit()

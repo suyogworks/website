@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Matrica Networks Pvt Ltd</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">MATRICA EMPLOYEE</a>
+            <div class="nav-controls">
+                <button class="theme-toggle" title="Toggle theme">🌙</button>
+                <button id="logout-btn" class="btn btn-danger">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <h1>Welcome, <span id="employee-name">Employee</span>!</h1>
+            <p>This is your employee portal. Features will be added soon.</p>
+
+            <!-- Content will go here -->
+            <div id="employee-dashboard-content" style="margin-top: 2rem;">
+                <p>Loading dashboard...</p>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Matrica Networks Pvt Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isLoggedIn = localStorage.getItem('employeeLoggedIn') === 'true';
+            const employeeData = JSON.parse(localStorage.getItem('employeeUser'));
+
+            if (!isLoggedIn || !employeeData) {
+                alert('Please log in to access the employee dashboard.');
+                window.location.href = 'employee_login.html';
+                return;
+            }
+
+            document.getElementById('employee-name').textContent = employeeData.full_name || 'Employee';
+
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    localStorage.removeItem('employeeLoggedIn');
+                    localStorage.removeItem('employeeUser');
+                    window.location.href = 'employee_login.html';
+                });
+            }
+
+            // Placeholder for loading actual dashboard content
+            const dashboardContent = document.getElementById('employee-dashboard-content');
+            dashboardContent.innerHTML = `
+                <div class="card">
+                    <h3>My Profile</h3>
+                    <p><strong>Username:</strong> ${employeeData.username}</p>
+                    <p><strong>Designation:</strong> ${employeeData.designation || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${employeeData.email || 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${employeeData.phone || 'N/A'}</p>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

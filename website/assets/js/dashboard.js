@@ -11,7 +11,9 @@ class AdminDashboard {
             team: [],
             careers: [],
             resources: [],
-            products: []
+            products: [],
+            employees: [],
+            companyHandbook: null // Added company handbook data
         };
         
         this.init();
@@ -60,7 +62,9 @@ class AdminDashboard {
                 this.loadTeam(),
                 this.loadCareers(),
                 this.loadResources(),
-                this.loadProducts()
+                this.loadProducts(),
+                this.loadEmployees(),
+                this.loadCompanyHandbook() // Added call to load handbook
             ]);
             this.renderCurrentSection();
         } catch (error) {
@@ -103,6 +107,38 @@ class AdminDashboard {
             this.data.products = result.data;
         }
     }
+
+    async loadEmployees() {
+        // This will be implemented once the employee_admin_api.py is ready
+        // For now, simulate empty or mock data if needed for UI testing
+        try {
+            const result = await app.apiRequest('/cgi-bin/employee_admin_api.py');
+            if (result.success) {
+                this.data.employees = result.data;
+            } else {
+                this.data.employees = [];
+                console.error("Failed to load employees:", result.error);
+            }
+        } catch (error) {
+            this.data.employees = [];
+            console.error("Error fetching employees:", error);
+        }
+    }
+
+    async loadCompanyHandbook() {
+        try {
+            const result = await app.apiRequest('/cgi-bin/handbook_api.py'); // API to be created
+            if (result.success && result.data) {
+                this.data.companyHandbook = result.data;
+            } else {
+                this.data.companyHandbook = null;
+                // console.info("No company handbook found or error loading:", result.error);
+            }
+        } catch (error) {
+            this.data.companyHandbook = null;
+            console.error("Error fetching company handbook:", error);
+        }
+    }
     
     renderCurrentSection() {
         switch (this.currentSection) {
@@ -120,6 +156,12 @@ class AdminDashboard {
                 break;
             case 'products':
                 this.renderProducts();
+                break;
+            case 'employees':
+                this.renderEmployees();
+                break;
+            case 'settings': // Added case for settings
+                this.renderCompanySettings();
                 break;
         }
     }
@@ -666,3 +708,302 @@ function handleProductForm(e) {
     const formData = new FormData(e.target);
     dashboard.addProduct(formData);
 }
+
+// Employee Management Methods
+AdminDashboard.prototype.renderEmployees = function() {
+    const container = document.getElementById('employees-list');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="mb-2">
+            <button class="btn" onclick="dashboard.showAddEmployeeModal()">Add New Employee</button>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Designation</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${this.data.employees && this.data.employees.length > 0 ? this.data.employees.map(emp => `
+                        <tr>
+                            <td>${emp.id}</td>
+                            <td>${emp.full_name}</td>
+                            <td>${emp.username}</td>
+                            <td>${emp.designation || 'N/A'}</td>
+                            <td>${emp.email || 'N/A'}</td>
+                            <td>${emp.phone || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="dashboard.showEditEmployeeModal(${emp.id})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="dashboard.deleteEmployee(${emp.id})">Delete</button>
+                                <button class="btn btn-warning btn-sm" onclick="dashboard.showResetPasswordModal(${emp.id}, '${emp.username}')">Reset Password</button>
+                            </td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="7" class="text-center">No employees found.</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+    `;
+};
+
+AdminDashboard.prototype.showAddEmployeeModal = function() {
+    this.showModal('employee-modal');
+    const form = document.getElementById('employee-form');
+    form.reset();
+    document.getElementById('employee-id').value = '';
+    form.dataset.mode = 'add';
+    document.getElementById('employee-modal-title').textContent = 'Add New Employee';
+    document.getElementById('employee-form-submit-btn').textContent = 'Add Employee';
+    // Password field should be required for add
+    document.getElementById('employee-password').setAttribute('required', 'required');
+};
+
+AdminDashboard.prototype.showEditEmployeeModal = function(id) {
+    const employee = this.data.employees.find(emp => emp.id === id);
+    if (!employee) {
+        app.showAlert('Employee not found.', 'error');
+        return;
+    }
+    this.showModal('employee-modal');
+    const form = document.getElementById('employee-form');
+    form.reset();
+    form.dataset.mode = 'edit';
+
+    document.getElementById('employee-modal-title').textContent = 'Edit Employee';
+    document.getElementById('employee-form-submit-btn').textContent = 'Save Changes';
+
+    document.getElementById('employee-id').value = employee.id;
+    document.getElementById('employee-full-name').value = employee.full_name;
+    document.getElementById('employee-username').value = employee.username;
+    // Password is not pre-filled for security; only set if changing.
+    document.getElementById('employee-password').value = '';
+    document.getElementById('employee-password').removeAttribute('required'); // Not required for edit unless changing
+    document.getElementById('employee-designation').value = employee.designation || '';
+    document.getElementById('employee-email').value = employee.email || '';
+    document.getElementById('employee-phone').value = employee.phone || '';
+    document.getElementById('employee-profile-picture-url').value = employee.profile_picture_url || '';
+};
+
+AdminDashboard.prototype.saveEmployee = async function(formData) {
+    const form = document.getElementById('employee-form');
+    const mode = form.dataset.mode;
+    const employeeId = formData.get('id'); // Get ID from hidden input in form data
+
+    let url = '/cgi-bin/employee_admin_api.py';
+    let method = 'POST';
+
+    // If it's an edit and there's an employeeId, change method to PUT and append ID to URL
+    if (mode === 'edit' && employeeId) {
+        url += `?id=${employeeId}`;
+        method = 'PUT';
+    } else if (mode === 'add') {
+        // Ensure password is provided for add mode
+        if (!formData.get('password')) {
+            app.showAlert('Password is required for new employees.', 'error');
+            return;
+        }
+    }
+
+
+    // Remove 'id' from FormData if it's empty (for 'add' mode)
+    // The Python API for POST (add) won't expect an ID.
+    if (mode === 'add' && !employeeId) {
+        formData.delete('id');
+    }
+
+    // If password field is empty during edit, remove it from formData so it's not sent
+    if (mode === 'edit' && !formData.get('password')) {
+        formData.delete('password');
+    }
+
+
+    try {
+        const result = await app.apiRequest(url, {
+            method: method,
+            body: formData // FormData handles multipart/form-data for file uploads
+        });
+
+        if (result.success) {
+            const message = mode === 'edit' ? 'Employee updated successfully' : 'Employee added successfully';
+            app.showAlert(message, 'success');
+            await this.loadEmployees(); // Reload employee list
+            this.renderEmployees();     // Re-render the list
+            this.closeModal();
+        } else {
+            app.showAlert(result.error || 'An unknown error occurred', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to save employee:', error);
+        const message = mode === 'edit' ? 'Failed to update employee' : 'Failed to add employee';
+        app.showAlert(message, 'error');
+    }
+};
+
+AdminDashboard.prototype.deleteEmployee = async function(id) {
+    if (!confirm('Are you sure you want to delete this employee? This action cannot be undone.')) return;
+
+    try {
+        const result = await app.apiRequest(`/cgi-bin/employee_admin_api.py?id=${id}`, {
+            method: 'DELETE'
+        });
+
+        if (result.success) {
+            app.showAlert('Employee deleted successfully', 'success');
+            await this.loadEmployees();
+            this.renderEmployees();
+        } else {
+            app.showAlert(result.error || 'Failed to delete employee', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting employee:', error);
+        app.showAlert('Failed to delete employee', 'error');
+    }
+};
+
+// Placeholder for Reset Password Modal - to be detailed in a later step
+AdminDashboard.prototype.showResetPasswordModal = function(employeeId, username) {
+    // This will be implemented when working on the password reset feature
+    const newPassword = prompt(`Enter new password for ${username}:`);
+    if (newPassword && newPassword.trim() !== "") {
+        const confirmPassword = prompt(`Confirm new password for ${username}:`);
+        if (newPassword === confirmPassword) {
+            this.resetEmployeePassword(employeeId, newPassword);
+        } else if (confirmPassword !== null) { // only show error if confirm was not cancelled
+            alert("Passwords do not match.");
+        }
+    } else if (newPassword !== null) { // only show error if prompt was not cancelled
+        alert("Password cannot be empty.");
+    }
+};
+
+AdminDashboard.prototype.resetEmployeePassword = async function(employeeId, newPassword) {
+    // This will call a specific API endpoint or action
+    // For now, using a PUT to employee_admin_api.py with an action flag
+    try {
+        const result = await app.apiRequest(`/cgi-bin/employee_admin_api.py?action=reset_password&id=${employeeId}`, {
+            method: 'PUT', // Or POST, depends on API design
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ password: newPassword })
+        });
+
+        if (result.success) {
+            app.showAlert('Password reset successfully.', 'success');
+        } else {
+            app.showAlert(result.error || 'Failed to reset password.', 'error');
+        }
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        app.showAlert('Failed to reset password.', 'error');
+    }
+};
+
+
+function handleEmployeeForm(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    // Clear the file input value from FormData if no file is selected,
+    // to prevent sending an empty "profile_picture_file" field which might confuse the backend.
+    const profilePicFile = formData.get('profile_picture_file');
+    if (profilePicFile && profilePicFile.name === "") {
+        formData.delete('profile_picture_file');
+    }
+    dashboard.saveEmployee(formData);
+}
+
+// Company Handbook Management Methods
+AdminDashboard.prototype.renderCompanySettings = function() {
+    this.renderCompanyHandbook();
+    // Other settings can be rendered here if added later
+};
+
+AdminDashboard.prototype.renderCompanyHandbook = function() {
+    const handbookInfoDiv = document.getElementById('handbook-info');
+    const deleteButton = document.getElementById('delete-handbook-btn');
+    const uploadForm = document.getElementById('handbook-upload-form');
+
+    if (!handbookInfoDiv || !deleteButton || !uploadForm) return;
+
+    if (this.data.companyHandbook && this.data.companyHandbook.file_path) {
+        handbookInfoDiv.innerHTML = `
+            <p><strong>Current Handbook:</strong> <a href="${this.data.companyHandbook.file_path}" target="_blank">${this.data.companyHandbook.file_name}</a></p>
+            <p><small>Uploaded: ${app.formatDate(this.data.companyHandbook.uploaded_at)}</small></p>
+        `;
+        deleteButton.style.display = 'inline-block';
+    } else {
+        handbookInfoDiv.innerHTML = '<p>No company handbook has been uploaded yet.</p>';
+        deleteButton.style.display = 'none';
+    }
+
+    // Ensure event listeners are (re)attached here or in a more global setup
+    // For simplicity, re-attaching if they might be destroyed by innerHTML changes or section switching.
+    // A more robust solution might use event delegation or attach once in init().
+    if (!uploadForm.dataset.listenerAttached) {
+        uploadForm.addEventListener('submit', this.handleHandbookUpload.bind(this));
+        uploadForm.dataset.listenerAttached = 'true';
+    }
+    if (!deleteButton.dataset.listenerAttached) {
+        deleteButton.addEventListener('click', this.deleteCompanyHandbook.bind(this));
+        deleteButton.dataset.listenerAttached = 'true';
+    }
+};
+
+AdminDashboard.prototype.handleHandbookUpload = async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    const fileInput = form.querySelector('#handbook-file');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        app.showAlert('Please select a PDF file to upload.', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('handbook_file', fileInput.files[0]);
+
+    try {
+        const result = await app.apiRequest('/cgi-bin/handbook_api.py', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (result.success) {
+            app.showAlert('Company handbook uploaded successfully.', 'success');
+            await this.loadCompanyHandbook();
+            this.renderCompanyHandbook();
+            form.reset();
+        } else {
+            app.showAlert(result.error || 'Failed to upload handbook.', 'error');
+        }
+    } catch (error) {
+        console.error('Error uploading handbook:', error);
+        app.showAlert('An error occurred during handbook upload.', 'error');
+    }
+};
+
+AdminDashboard.prototype.deleteCompanyHandbook = async function() {
+    if (!confirm('Are you sure you want to delete the current company handbook?')) return;
+
+    try {
+        const result = await app.apiRequest('/cgi-bin/handbook_api.py', {
+            method: 'DELETE'
+        });
+
+        if (result.success) {
+            app.showAlert('Company handbook deleted successfully.', 'success');
+            await this.loadCompanyHandbook();
+            this.renderCompanyHandbook();
+        } else {
+            app.showAlert(result.error || 'Failed to delete handbook.', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting handbook:', error);
+        app.showAlert('An error occurred while deleting the handbook.', 'error');
+    }
+};

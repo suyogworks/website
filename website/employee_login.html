@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Login - Matrica Networks Pvt Ltd</title>
+    <meta name="description" content="Employee login portal for Matrica Networks.">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">MATRICA</a>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="services.html">Services</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="resources.html">Resources</a></li>
+                <li><a href="careers.html">Careers</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <div class="nav-controls">
+                <button class="theme-toggle" title="Toggle theme">🌙</button>
+                <a href="admin.html" class="admin-btn">Admin Login</a>
+            </div>
+            <button class="menu-toggle">☰</button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="card" style="max-width: 400px; margin: 0 auto;">
+                        <h1 style="text-align: center; margin-bottom: 2rem;">Employee Login</h1>
+
+                        <form id="employee-login-form">
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input type="text" id="username" name="username" required autocomplete="username">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <input type="password" id="password" name="password" required autocomplete="current-password">
+                            </div>
+
+                            <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">
+                                Login to Employee Portal
+                            </button>
+                        </form>
+                        <div id="error-message" class="text-danger" style="margin-top: 1rem; text-align: center; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Matrica Networks Pvt Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('employee-login-form');
+            const errorMessageDiv = document.getElementById('error-message');
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    errorMessageDiv.style.display = 'none';
+                    errorMessageDiv.textContent = '';
+
+                    const formData = new FormData(e.target);
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.textContent = 'Logging in...';
+                    submitBtn.disabled = true;
+
+                    try {
+                        const response = await fetch('/cgi-bin/employee_auth_api.py', {
+                            method: 'POST',
+                            body: new URLSearchParams(formData) // Send as x-www-form-urlencoded
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            localStorage.setItem('employeeLoggedIn', 'true');
+                            localStorage.setItem('employeeUser', JSON.stringify(result.employee)); // Store employee data
+                            // Redirect to a future employee dashboard
+                            window.location.href = 'employee_dashboard.html';
+                        } else {
+                            errorMessageDiv.textContent = result.error || 'Invalid credentials or error.';
+                            errorMessageDiv.style.display = 'block';
+                        }
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        errorMessageDiv.textContent = 'Login failed: Network error or server issue.';
+                        errorMessageDiv.style.display = 'block';
+                    } finally {
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
