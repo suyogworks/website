@@ -95,13 +95,76 @@ def init_database():
             uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+
     # Placeholder for future tables related to Employee Management System
-    # tasks table
-    # leave_requests table
-    # attendance table
-    # employee_documents table (Aadhaar, PAN, certificates)
-    # education_history table
+
+    # Create tasks table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            assigned_to_employee_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            due_date DATE,
+            status TEXT NOT NULL DEFAULT 'Pending', -- Pending, In Progress, Completed
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (assigned_to_employee_id) REFERENCES employees (id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Create leave_requests table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS leave_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            reason TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Pending', -- Pending, Approved, Rejected
+            requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Create attendance table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            punch_in_time DATETIME,
+            punch_out_time DATETIME,
+            date DATE NOT NULL, -- To ensure one record per day per employee
+            UNIQUE (employee_id, date),
+            FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Create employee_documents table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employee_documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            document_type TEXT NOT NULL, -- 'aadhaar', 'pan', 'certificate', etc.
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL UNIQUE,
+            uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Create education_history table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS education_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            institution_name TEXT NOT NULL,
+            degree TEXT NOT NULL,
+            year_of_completion INTEGER, -- Year as integer
+            details TEXT, -- Optional, for percentage/GPA or other notes
+            FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE
+        )
+    ''')
 
     # Insert sample data (if any for new tables, or adjust existing)
     insert_sample_data(cursor)
