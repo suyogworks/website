@@ -6,6 +6,11 @@ import os
 import sys
 from datetime import datetime, date as datetime_date
 import urllib.parse
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'matrica.db')
 
@@ -94,56 +99,68 @@ def main():
     print()
 
     method = os.environ.get('REQUEST_METHOD', 'GET')
+    logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
 
     if method == 'OPTIONS':
+        logger.info("Handling OPTIONS request.")
         print(json.dumps({"status": "ok"}))
         sys.exit(0)
 
     employee_id_str = os.environ.get('HTTP_X_EMPLOYEE_ID')
     query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
-    action = query_params.get('action', [None])[0] # For POST actions
+    action = query_params.get('action', [None])[0]
 
     if not employee_id_str:
+        logger.warning("Authentication required: Employee ID missing from header.")
         print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing."}))
         sys.exit(0)
 
     try:
         employee_id = int(employee_id_str)
     except ValueError:
+        logger.error(f"Invalid Employee ID format: {employee_id_str}")
         print(json.dumps({"success": False, "error": "Invalid Employee ID format."}))
         sys.exit(0)
 
+    logger.debug(f"Processing attendance request for employee_id: {employee_id}, action: {action}")
+
     try:
         if method == 'GET':
-            # Expected query param like ?date=today (though 'today' is assumed if not specified)
-            # For simplicity, this GET always returns today's status.
+            logger.info(f"Fetching today's attendance for employee_id: {employee_id}")
             attendance_status = get_today_attendance(employee_id)
             print(json.dumps({"success": True, "data": attendance_status}))
 
         elif method == 'POST':
             if action == 'punch_in':
+                logger.info(f"Processing punch_in for employee_id: {employee_id}")
                 success, result_data = punch_in(employee_id)
                 if success:
+                    logger.info(f"Punch_in successful for employee_id: {employee_id}, data: {result_data}")
                     print(json.dumps({"success": True, "message": "Punched in successfully.", "data": result_data}))
                 else:
+                    logger.warning(f"Punch_in failed for employee_id: {employee_id}, reason: {result_data}")
                     print(json.dumps({"success": False, "error": result_data}))
             elif action == 'punch_out':
+                logger.info(f"Processing punch_out for employee_id: {employee_id}")
                 success, result_data = punch_out(employee_id)
                 if success:
+                    logger.info(f"Punch_out successful for employee_id: {employee_id}, data: {result_data}")
                     print(json.dumps({"success": True, "message": "Punched out successfully.", "data": result_data}))
                 else:
+                    logger.warning(f"Punch_out failed for employee_id: {employee_id}, reason: {result_data}")
                     print(json.dumps({"success": False, "error": result_data}))
             else:
+                logger.warning(f"Invalid action '{action}' for POST request.")
                 print(json.dumps({"success": False, "error": "Invalid action for POST request."}))
 
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"success": False, "error": f"Method {method} not allowed."}))
 
     except Exception as e:
-        print(f"Error in attendance_api.py: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Unhandled error in {script_name}: {e}", exc_info=True)
         print(json.dumps({"success": False, "error": "An internal server error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

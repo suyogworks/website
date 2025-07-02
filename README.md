@@ -277,7 +277,31 @@ Nginx will serve static files and pass CGI requests to a handler. `fcgiwrap` is 
 
 ## 8. Logging
 
--   **CGI Script Errors**: Python CGI scripts print errors to `stderr`. These are typically logged by the web server (Nginx in production, or the console for the local Python server) in its error log (e.g., `/var/log/nginx/error_log` or `/var/log/nginx/matrica_error.log` as configured).
--   **Nginx Logs**: Access and error logs configured in the Nginx server block provide request details and server issues.
--   **Application-Level Logging**: Detailed application-level logging (e.g., specific actions to a custom log file) is not extensively implemented. Current error details from Python scripts are sent to `stderr`.
+-   **CGI Script Errors & Python `stderr`**: Python CGI scripts, by default, send their `stdout` as the HTTP response and `stderr` to the web server's error log. The application's Python scripts have been configured to also print unhandled exceptions to `stderr`, which will typically end up in the web server's error log (e.g., `/var/log/nginx/error_log` or `/var/log/nginx/matrica_error.log` as configured for Nginx, or to the console if using `python -m http.server --cgi`).
+
+-   **Application Log File**:
+    -   The application implements more detailed logging using Python's `logging` module.
+    -   **Location**: Log messages are written to `website/logs/app.log`.
+    -   **Format**: `YYYY-MM-DD HH:MM:SS - LEVEL - [script_name.py] - Message`
+    -   **Content**: Includes informational messages about requests, actions taken, warnings for non-critical issues, and detailed error messages with stack traces for exceptions.
+    -   **Viewing Logs**: You can view the application log using standard command-line tools:
+        ```bash
+        # View the entire log
+        cat website/logs/app.log
+
+        # Tail the log in real-time
+        tail -f website/logs/app.log
+
+        # Filter for errors
+        grep "ERROR" website/logs/app.log
+        ```
+    -   **Permissions**: Ensure the `website/logs/` directory is writable by the user/process running the CGI scripts (e.g., `www-data` in a typical Nginx setup). The `logger_config.py` attempts to create this directory if it doesn't exist, but write permissions are crucial.
+        ```bash
+        # Example permission setting on the server:
+        sudo chown -R www-data:www-data /var/www/matrica_networks/logs
+        sudo chmod -R u+rwX,g+rwX,o+rX /var/www/matrica_networks/logs
+        ```
+    -   **Log Rotation (Production)**: For production environments, it is crucial to set up log rotation for `website/logs/app.log` (and server logs) to prevent them from consuming excessive disk space. This is typically done using system utilities like `logrotate`. Configuration for `logrotate` is outside the scope of this application's code but is a standard server administration task.
+
+-   **Nginx Logs**: As mentioned in the deployment section, Nginx access and error logs (e.g., `/var/log/nginx/matrica_access.log`, `/var/log/nginx/matrica_error.log`) are vital for diagnosing request handling issues at the web server level.
 ```

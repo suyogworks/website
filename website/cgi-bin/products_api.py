@@ -11,6 +11,11 @@ import urllib.parse
 import sqlite3
 import re
 from html import escape
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 def get_db_connection():
     """Get database connection"""
@@ -168,85 +173,94 @@ def main():
 
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
-        
-        # Handle OPTIONS request for CORS
+        logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
+
         if method == 'OPTIONS':
+            logger.info("Handling OPTIONS request.")
             print(json.dumps({"status": "ok"}))
             return
 
         if method == 'GET':
+            logger.info("Handling GET request for all products.")
             products = get_all_products()
             print(json.dumps({"success": True, "data": products}))
             
-        elif method == 'POST' or method == 'PUT': # Added PUT
-            form_data = parse_form_data()
+        elif method == 'POST' or method == 'PUT':
+            logger.info(f"Handling {method} request for product.")
+            form_data = parse_form_data() # This function might need logging if complex
             
-            # For PUT, get product_id from query string
             product_id_to_update = None
             if method == 'PUT':
                 query_string = os.environ.get('QUERY_STRING', '')
                 if 'id=' in query_string:
-                    product_id_to_update = int(query_string.split('id=')[1].split('&')[0])
+                    try:
+                        product_id_to_update = int(query_string.split('id=')[1].split('&')[0])
+                        logger.info(f"Product ID for PUT: {product_id_to_update}")
+                    except ValueError:
+                        logger.error(f"Invalid Product ID for PUT: {query_string.split('id=')[1].split('&')[0]}")
+                        print(json.dumps({"success": False, "error": "Invalid Product ID format."}))
+                        return
                 else:
+                    logger.warning("Product ID required for PUT request but not provided.")
                     print(json.dumps({"success": False, "error": "Product ID required for update"}))
                     return
+            
+            name = escape(form_data.get('name', [''])[0] if isinstance(form_data.get('name'), list) else form_data.get('name', ''))
+            description = escape(form_data.get('description', [''])[0] if isinstance(form_data.get('description'), list) else form_data.get('description', ''))
+            logo_url = form_data.get('logo_url', [''])[0] if isinstance(form_data.get('logo_url'), list) else form_data.get('logo_url', '')
+            # Not escaping logo_url as it's a URL
 
-            # Extract form fields, handling both list and string formats
-            name = ''
-            description = ''
-            logo_url = ''
-            
-            if 'name' in form_data:
-                name_val = form_data['name']
-                name = escape(name_val[0] if isinstance(name_val, list) else name_val)
-            
-            if 'description' in form_data:
-                description_val = form_data['description']
-                description = escape(description_val[0] if isinstance(description_val, list) else description_val)
-            
-            if 'logo_url' in form_data:
-                logo_url_val = form_data['logo_url']
-                logo_url = logo_url_val[0] if isinstance(logo_url_val, list) else logo_url_val
-            
-            data = {
-                'name': name,
-                'description': description,
-                'logo_url': logo_url
-            }
-            
+            data = {'name': name, 'description': description, 'logo_url': logo_url}
+            logger.debug(f"Parsed data for {method}: { {k:v for k,v in data.items() if k != 'password_hash'} }")
+
+
             if not data['name'] or not data['description']:
+                logger.warning(f"{method} attempt with missing name or description.")
                 print(json.dumps({"success": False, "error": "Name and description are required"}))
                 return
 
             if method == 'POST':
                 product_id = add_product(data)
+                logger.info(f"Product added with ID: {product_id}")
                 print(json.dumps({"success": True, "id": product_id, "message": "Product added successfully"}))
             elif method == 'PUT':
-                # Add an update_product function similar to add_product
-                # For now, let's assume update_product exists and works
-                # This part needs to be implemented properly
                 updated = update_product(product_id_to_update, data)
                 if updated:
+                    logger.info(f"Product with ID: {product_id_to_update} updated successfully.")
                     print(json.dumps({"success": True, "id": product_id_to_update, "message": "Product updated successfully"}))
                 else:
+                    logger.warning(f"Failed to update product with ID: {product_id_to_update} or product not found.")
                     print(json.dumps({"success": False, "error": "Failed to update product or product not found"}))
             
         elif method == 'DELETE':
             query_string = os.environ.get('QUERY_STRING', '')
+            logger.info(f"Handling DELETE request for product. Query: {query_string}")
             if 'id=' in query_string:
-                product_id = query_string.split('id=')[1].split('&')[0]
-                if delete_product(int(product_id)):
-                    print(json.dumps({"success": True, "message": "Product deleted successfully"}))
-                else:
-                    print(json.dumps({"error": "Product not found"}))
+                try:
+                    product_id_str = query_string.split('id=')[1].split('&')[0]
+                    product_id = int(product_id_str)
+                    if delete_product(product_id):
+                        logger.info(f"Product with ID: {product_id} deleted successfully.")
+                        print(json.dumps({"success": True, "message": "Product deleted successfully"}))
+                    else:
+                        logger.warning(f"Product with ID: {product_id} not found for deletion.")
+                        print(json.dumps({"success": False, "error": "Product not found"})) # Changed from generic error
+                except ValueError:
+                    logger.error(f"Invalid Product ID for DELETE: {product_id_str}")
+                    print(json.dumps({"success": False, "error": "Invalid Product ID format."}))
             else:
-                print(json.dumps({"error": "Product ID required"}))
+                logger.warning("Product ID required for DELETE request but not provided.")
+                print(json.dumps({"success": False, "error": "Product ID required"})) # Changed from generic error
         
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"error": "Method not allowed"}))
             
     except Exception as e:
-        print(json.dumps({"error": "Server error", "details": str(e)}))
+        logger.error(f"Unhandled server error: {e}", exc_info=True)
+        print(json.dumps({"error": "Server error", "details": "An unexpected error occurred."}))
+
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

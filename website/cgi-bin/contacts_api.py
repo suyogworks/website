@@ -11,6 +11,11 @@ import urllib.parse
 import sqlite3
 from html import escape
 from datetime import datetime
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 def get_db_connection():
     """Get database connection"""
@@ -82,42 +87,55 @@ def main():
     
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
+        logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
         
-        # Handle OPTIONS request for CORS
         if method == 'OPTIONS':
+            logger.info("Handling OPTIONS request.")
             print(json.dumps({"status": "ok"}))
             return
         
         if method == 'GET':
-            # Return all contacts
+            logger.info("Handling GET request for all contacts.")
             contacts = get_all_contacts()
             print(json.dumps({"success": True, "data": contacts}))
             
         elif method == 'POST':
-            # Add new contact
-            form_data = parse_form_data()
+            logger.info("Handling POST request for new contact submission.")
+            form_data = parse_form_data() # Consider logging inside if complex
             
             data = {
                 'name': escape(form_data.get('name', [''])[0].strip()),
-                'email': form_data.get('email', [''])[0].strip(),
+                'email': form_data.get('email', [''])[0].strip(), # Email not typically escaped if used for sending
                 'phone': form_data.get('phone', [''])[0].strip(),
                 'company': escape(form_data.get('company', [''])[0].strip()),
                 'subject': escape(form_data.get('subject', [''])[0].strip()),
                 'message': escape(form_data.get('message', [''])[0].strip())
             }
-            
+            logger.debug(f"Parsed contact form data: Name='{data['name']}', Email='{data['email']}', Subject='{data['subject']}'")
+
             if not data['name'] or not data['email'] or not data['message']:
+                logger.warning("Contact submission attempt with missing name, email, or message.")
                 print(json.dumps({"success": False, "error": "Name, email, and message are required"}))
                 return
             
+            # Basic email validation (already in submit_contact, good to have here too if this is the main endpoint)
+            if '@' not in data['email'] or '.' not in data['email'].split('@')[-1]:
+                logger.warning(f"Invalid email format in contact submission: {data['email']}")
+                print(json.dumps({"success": False, "error": "Please enter a valid email address."}))
+                return
+
             contact_id = add_contact(data)
+            logger.info(f"Contact submission added successfully with ID: {contact_id}")
             print(json.dumps({"success": True, "id": contact_id, "message": "Contact submission added successfully"}))
         
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"error": "Method not allowed"}))
             
     except Exception as e:
-        print(json.dumps({"error": "Server error", "details": str(e)}))
+        logger.error(f"Unhandled server error: {e}", exc_info=True)
+        print(json.dumps({"error": "Server error", "details": "An unexpected error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()
