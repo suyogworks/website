@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Matrica Networks Pvt Ltd</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">MATRICA EMPLOYEE</a>
+            <div class="nav-controls">
+                <button class="theme-toggle" title="Toggle theme">🌙</button>
+                <button id="logout-btn" class="btn btn-danger">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <style>
+        .employee-dashboard-layout {
+            display: flex;
+            min-height: calc(100vh - var(--header-height) - var(--footer-height) - 4rem); /* Adjust based on actual header/footer */
+        }
+        .employee-sidebar {
+            width: 250px;
+            background-color: var(--bg-secondary);
+            padding: 1rem;
+            border-right: 1px solid var(--border-color);
+        }
+        .employee-sidebar .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .employee-sidebar .nav-menu li a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            transition: background-color 0.2s ease;
+        }
+        .employee-sidebar .nav-menu li a:hover,
+        .employee-sidebar .nav-menu li a.active {
+            background-color: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        .employee-main-content {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .profile-picture-container {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 1rem auto;
+            border: 3px solid var(--accent-primary);
+        }
+        .profile-picture-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+    <main class="main-content" style="padding-top: 1rem; padding-bottom: 1rem;">
+        <div class="container employee-dashboard-layout">
+            <aside class="employee-sidebar">
+                <div class="profile-picture-container">
+                    <img id="employee-profile-pic" src="assets/images/default-avatar.png" alt="Profile Picture">
+                </div>
+                <h3 id="employee-sidebar-name" style="text-align: center; margin-bottom: 0.5rem;">Employee</h3>
+                <p id="employee-sidebar-designation" style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Designation</p>
+                <ul class="nav-menu">
+                    <li><a href="#profile" class="active" data-section="profile">My Profile</a></li>
+                    <li><a href="#handbook" data-section="handbook">Company Handbook</a></li>
+                    <li><a href="#attendance" data-section="attendance">Attendance</a></li>
+                    <li><a href="#tasks" data-section="tasks">My Tasks</a></li>
+                    <li><a href="#leave" data-section="leave">Leave Requests</a></li>
+                    <li><a href="#documents" data-section="documents">My Documents</a></li>
+                    <li><a href="#education" data-section="education">Education History</a></li>
+                </ul>
+            </aside>
+            <section class="employee-main-content">
+                <!-- Content will be dynamically injected here -->
+                <div id="dashboard-section-profile" class="dashboard-section active">
+                    <h2>My Profile</h2>
+                    <div class="card">
+                        <form id="employee-profile-form">
+                            <div class="profile-picture-container" style="margin-bottom: 1.5rem; width: 120px; height: 120px;">
+                                <img id="profile-view-pic" src="assets/images/default-avatar.png" alt="Profile Picture">
+                            </div>
+                            <input type="file" id="profile-pic-upload" name="profile_picture_file" accept="image/*" style="display:none;">
+                            <button type="button" id="change-profile-pic-btn" class="btn btn-secondary btn-sm mb-2" style="display: block; margin: 0 auto 1rem auto;">Change Picture</button>
+
+                            <div class="form-group">
+                                <label for="profile-username">Username</label>
+                                <input type="text" id="profile-username" name="username" readonly class="form-control-plaintext">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-full-name">Full Name *</label>
+                                <input type="text" id="profile-full-name" name="full_name" required readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-email">Email *</label>
+                                <input type="email" id="profile-email" name="email" required readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-phone">Phone</label>
+                                <input type="tel" id="profile-phone" name="phone" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-designation">Designation</label>
+                                <input type="text" id="profile-designation" name="designation" readonly class="form-control-plaintext">
+                            </div>
+                            <div id="profile-edit-buttons" style="margin-top: 1.5rem;">
+                                <button type="button" id="edit-profile-btn" class="btn">Edit Profile</button>
+                                <button type="submit" id="save-profile-btn" class="btn btn-primary" style="display:none;">Save Changes</button>
+                                <button type="button" id="cancel-edit-profile-btn" class="btn btn-secondary" style="display:none;">Cancel</button>
+                            </div>
+                             <div id="profile-message" class="text-success" style="margin-top: 1rem; text-align: center; display: none;"></div>
+                        </form>
+                    </div>
+                </div>
+                <div id="dashboard-section-handbook" class="dashboard-section" style="display:none;">
+                    <h2>Company Handbook</h2>
+                    <p>Company handbook will be loaded here...</p>
+                </div>
+                <div id="dashboard-section-attendance" class="dashboard-section" style="display:none;">
+                    <h2>Attendance</h2>
+                    <div class="card">
+                        <div id="attendance-status" style="margin-bottom: 1.5rem; text-align: center; font-size: 1.1rem;">
+                            <p>Loading attendance status...</p>
+                        </div>
+                        <div style="display: flex; justify-content: space-around;">
+                            <button id="punch-in-btn" class="btn btn-success" style="min-width: 120px;">Punch In</button>
+                            <button id="punch-out-btn" class="btn btn-danger" style="min_width: 120px;">Punch Out</button>
+                        </div>
+                        <div id="attendance-message" class="text-center mt-2" style="display: none;"></div>
+                    </div>
+                    <!-- Future: Could add a view of recent attendance history here -->
+                </div>
+                <div id="dashboard-section-tasks" class="dashboard-section" style="display:none;">
+                    <h2>My Tasks</h2>
+                    <div class="card">
+                        <div id="tasks-list">
+                            <p>Loading tasks...</p>
+                        </div>
+                        <!-- Future: Add filters or options to change task status by employee -->
+                    </div>
+                </div>
+                <div id="dashboard-section-leave" class="dashboard-section" style="display:none;">
+                    <h2>Leave Requests</h2>
+                    <div class="card">
+                        <h3>Request New Leave</h3>
+                        <form id="leave-request-form">
+                            <div class="form-group">
+                                <label for="leave-start-date">Start Date *</label>
+                                <input type="date" id="leave-start-date" name="start_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="leave-end-date">End Date *</label>
+                                <input type="date" id="leave-end-date" name="end_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="leave-reason">Reason *</label>
+                                <textarea id="leave-reason" name="reason" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn">Submit Request</button>
+                        </form>
+                        <div id="leave-request-message" class="mt-2" style="display: none;"></div>
+                    </div>
+                    <div class="card mt-2">
+                        <h3>My Leave History</h3>
+                        <div id="leave-history-list">
+                            <p>Loading leave history...</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="dashboard-section-documents" class="dashboard-section" style="display:none;">
+                    <h2>My Documents</h2>
+                    <div class="card">
+                        <h3>Upload New Document</h3>
+                        <form id="employee-document-upload-form">
+                            <div class="form-group">
+                                <label for="document-type">Document Type *</label>
+                                <select id="document-type" name="document_type" required>
+                                    <option value="">-- Select Type --</option>
+                                    <option value="aadhaar">Aadhaar Card</option>
+                                    <option value="pan">PAN Card</option>
+                                    <option value="certificate">Certificate</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="document-file">File (PDF, JPG, PNG) *</label>
+                                <input type="file" id="document-file" name="document_file" accept=".pdf,.jpg,.jpeg,.png" required>
+                            </div>
+                            <button type="submit" class="btn">Upload Document</button>
+                        </form>
+                        <div id="document-upload-message" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                    <div class="card mt-2">
+                        <h3>Uploaded Documents</h3>
+                        <div id="employee-documents-list">
+                            <p>Loading documents...</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="dashboard-section-education" class="dashboard-section" style="display:none;">
+                    <h2>Education History</h2>
+                    <div class="card">
+                        <h3>Add Education Record</h3>
+                        <form id="education-entry-form">
+                            <input type="hidden" id="education-id" name="id">
+                            <div class="form-group">
+                                <label for="institution-name">Institution Name *</label>
+                                <input type="text" id="institution-name" name="institution_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="degree">Degree/Certificate *</label>
+                                <input type="text" id="degree" name="degree" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="year-of-completion">Year of Completion</label>
+                                <input type="number" id="year-of-completion" name="year_of_completion" min="1950" max="2099">
+                            </div>
+                            <div class="form-group">
+                                <label for="education-details">Details (e.g., GPA, Honors)</label>
+                                <textarea id="education-details" name="details" rows="3"></textarea>
+                            </div>
+                            <button type="submit" id="save-education-btn" class="btn">Add Record</button>
+                            <button type="button" id="cancel-edit-education-btn" class="btn btn-secondary" style="display:none;">Cancel Edit</button>
+                        </form>
+                        <div id="education-message" style="margin-top: 1rem; display: none;"></div>
+                    </div>
+                    <div class="card mt-2">
+                        <h3>My Education Records</h3>
+                        <div id="education-history-list">
+                            <p>Loading education records...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Matrica Networks Pvt Ltd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isLoggedIn = localStorage.getItem('employeeLoggedIn') === 'true';
+            const employeeData = JSON.parse(localStorage.getItem('employeeUser'));
+
+            if (!isLoggedIn || !employeeData) {
+                alert('Please log in to access the employee dashboard.');
+                window.location.href = 'employee_login.html';
+                return;
+            }
+
+            // Populate sidebar profile info
+            const profilePicImg = document.getElementById('employee-profile-pic');
+            if (employeeData.profile_picture_url) {
+                profilePicImg.src = employeeData.profile_picture_url;
+            }
+            profilePicImg.onerror = function() { this.src = 'assets/images/default-avatar.png'; }; // Fallback
+            document.getElementById('employee-sidebar-name').textContent = employeeData.full_name || 'Employee';
+            document.getElementById('employee-sidebar-designation').textContent = employeeData.designation || 'N/A';
+
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    localStorage.removeItem('employeeLoggedIn');
+                    localStorage.removeItem('employeeUser');
+                    window.location.href = 'employee_login.html';
+                });
+            }
+
+            const navLinks = document.querySelectorAll('.employee-sidebar .nav-menu a');
+            const sections = document.querySelectorAll('.employee-main-content .dashboard-section');
+
+            function showSection(sectionId) {
+                sections.forEach(section => {
+                    section.style.display = (section.id === `dashboard-section-${sectionId}`) ? 'block' : 'none';
+                });
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.dataset.section === sectionId);
+                });
+                // Update URL hash
+                // window.location.hash = sectionId;
+
+                // Load content for section if needed (will be implemented in later steps)
+                // Example: if (sectionId === 'profile') loadProfileData();
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sectionId = this.dataset.section;
+                    showSection(sectionId);
+                });
+            });
+
+            // Initial section display (e.g., from URL hash or default to 'profile')
+            let initialSection = window.location.hash.substring(1) || 'profile';
+            if (!document.getElementById(`dashboard-section-${initialSection}`)){
+                initialSection = 'profile'; // fallback to profile if hash is invalid
+            }
+            showSection(initialSection); // This will also trigger loadProfileData if initialSection is 'profile'
+
+            // --- Profile Section Logic ---
+            const profileForm = document.getElementById('employee-profile-form');
+            const editProfileBtn = document.getElementById('edit-profile-btn');
+            const saveProfileBtn = document.getElementById('save-profile-btn');
+            const cancelEditProfileBtn = document.getElementById('cancel-edit-profile-btn');
+            const profileMessageDiv = document.getElementById('profile-message');
+            const profileFields = ['profile-full-name', 'profile-email', 'profile-phone'];
+            const changeProfilePicBtn = document.getElementById('change-profile-pic-btn');
+            const profilePicUploadInput = document.getElementById('profile-pic-upload');
+
+            let originalProfileData = {};
+
+            async function loadProfileData() {
+                if (!employeeData || !employeeData.id) {
+                    profileMessageDiv.textContent = 'Error: Employee session not found.';
+                    profileMessageDiv.className = 'text-danger';
+                    profileMessageDiv.style.display = 'block';
+                    return;
+                }
+                try {
+                    // Modify app.apiRequest or create a new function to include X-Employee-ID header
+                    const response = await fetch('/cgi-bin/employee_profile_api.py', {
+                        method: 'GET',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        originalProfileData = result.data;
+                        populateProfileForm(result.data);
+                        // Update sidebar too, in case it changed via another session
+                        document.getElementById('employee-sidebar-name').textContent = result.data.full_name || 'Employee';
+                        document.getElementById('employee-sidebar-designation').textContent = result.data.designation || 'N/A';
+                        const profilePicImgSidebar = document.getElementById('employee-profile-pic');
+                        if (result.data.profile_picture_url) {
+                            profilePicImgSidebar.src = result.data.profile_picture_url;
+                        } else {
+                            profilePicImgSidebar.src = 'assets/images/default-avatar.png';
+                        }
+                    } else {
+                        profileMessageDiv.textContent = result.error || 'Failed to load profile data.';
+                        profileMessageDiv.className = 'text-danger';
+                        profileMessageDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                    profileMessageDiv.textContent = 'Network error loading profile.';
+                    profileMessageDiv.className = 'text-danger';
+                    profileMessageDiv.style.display = 'block';
+                }
+            }
+
+            function populateProfileForm(data) {
+                document.getElementById('profile-username').value = data.username || '';
+                document.getElementById('profile-full-name').value = data.full_name || '';
+                document.getElementById('profile-email').value = data.email || '';
+                document.getElementById('profile-phone').value = data.phone || '';
+                document.getElementById('profile-designation').value = data.designation || '';
+                const profileViewPic = document.getElementById('profile-view-pic');
+                if (data.profile_picture_url) {
+                    profileViewPic.src = data.profile_picture_url;
+                } else {
+                    profileViewPic.src = 'assets/images/default-avatar.png';
+                }
+                profileViewPic.onerror = function() { this.src = 'assets/images/default-avatar.png'; };
+            }
+
+            function setProfileFieldsReadOnly(isReadOnly) {
+                profileFields.forEach(id => {
+                    document.getElementById(id).readOnly = isReadOnly;
+                    if(isReadOnly) {
+                        document.getElementById(id).classList.add('form-control-plaintext');
+                    } else {
+                        document.getElementById(id).classList.remove('form-control-plaintext');
+                    }
+                });
+                 // Username and designation are always readonly for employee
+                document.getElementById('profile-username').classList.add('form-control-plaintext');
+                document.getElementById('profile-designation').classList.add('form-control-plaintext');
+
+                editProfileBtn.style.display = isReadOnly ? 'inline-block' : 'none';
+                saveProfileBtn.style.display = isReadOnly ? 'none' : 'inline-block';
+                cancelEditProfileBtn.style.display = isReadOnly ? 'none' : 'inline-block';
+                changeProfilePicBtn.style.visibility = isReadOnly ? 'hidden' : 'visible';
+
+            }
+
+            editProfileBtn.addEventListener('click', () => {
+                setProfileFieldsReadOnly(false);
+                document.getElementById('profile-full-name').focus();
+            });
+
+            cancelEditProfileBtn.addEventListener('click', () => {
+                populateProfileForm(originalProfileData); // Revert to original data
+                setProfileFieldsReadOnly(true);
+                profileMessageDiv.style.display = 'none';
+            });
+
+            changeProfilePicBtn.addEventListener('click', () => {
+                if (saveProfileBtn.style.display === 'none') { // Not in edit mode for text fields
+                     app.showAlert("Please click 'Edit Profile' first to enable picture changes along with other details, or picture upload will be a separate action soon.", "info");
+                     // For now, we'll tie it to the main save. Later step will make it independent.
+                } else {
+                    profilePicUploadInput.click(); // Open file dialog
+                }
+            });
+
+            profilePicUploadInput.addEventListener('change', function(event) {
+                if (event.target.files && event.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('profile-view-pic').src = e.target.result;
+                    }
+                    reader.readAsDataURL(event.target.files[0]);
+                    // Actual upload will happen on form submit (Save Changes)
+                }
+            });
+
+            profileForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(profileForm);
+                // We are not sending username or designation for update by employee
+                formData.delete('username');
+                formData.delete('designation');
+
+                // The profile_picture_file is already on formData if selected by its name 'profile_picture_file'.
+                // Ensure all relevant data is on formData.
+                // The 'employee_id' will be sent as a header or could also be added to FormData.
+                // Let's ensure 'employee_id' is part of the FormData for backend cgi.FieldStorage to pick it up easily.
+                formData.append('employee_id', employeeData.id.toString());
+
+
+                // If profile_pic_upload input has no file, and there was an existing profile_picture_url,
+                // we might want to send the existing URL to prevent it from being cleared if not explicitly changed.
+                // However, the backend logic for save_employee_profile_picture and update_employee_basic_info
+                // handles this: if profile_picture_file is sent, it's used. If not, profile_picture_url (text) is used.
+                // If neither, the URL isn't touched by update_employee_basic_info unless explicitly part of `data`.
+                const profilePicFile = formData.get('profile_picture_file');
+                if (profilePicFile && profilePicFile.name === "") { // No new file selected
+                    formData.delete('profile_picture_file'); // Don't send empty file field
+                    // If there's an existing URL in originalProfileData and no new file, ensure it's sent
+                    // This is handled by including profile_picture_url in the form, but it's readonly usually.
+                    // For simplicity, the backend will only update pic URL if a new file is given OR if
+                    // profile_picture_url is explicitly sent as a text field (which it isn't in this form for employee edit)
+                    // So, if no new file, the backend should preserve the old URL.
+                    // The current backend logic for PUT in employee_profile_api.py now expects all fields
+                    // including profile_picture_url (text) or profile_picture_file (file).
+                    // The JS form doesn't have a visible text input for profile_picture_url for the employee to edit.
+                    // Let's ensure the current URL is added to FormData if no new file is chosen,
+                    // so the backend doesn't clear it if that field is missing from the form submission.
+                    if (originalProfileData.profile_picture_url) {
+                         formData.append('profile_picture_url', originalProfileData.profile_picture_url);
+                    }
+
+                }
+
+
+                profileMessageDiv.style.display = 'none';
+                saveProfileBtn.disabled = true;
+                saveProfileBtn.textContent = 'Saving...';
+
+                try {
+                    // When sending FormData, browser sets Content-Type automatically (multipart/form-data)
+                    // Do not set Content-Type header manually when using FormData with fetch.
+                    const response = await fetch('/cgi-bin/employee_profile_api.py', {
+                        method: 'PUT',
+                        headers: {
+                            // 'Content-Type' is set by browser for FormData
+                            'X-Employee-ID': employeeData.id.toString() // Keep sending this for backend to identify user
+                        },
+                        body: formData
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        profileMessageDiv.textContent = 'Profile updated successfully!';
+                        profileMessageDiv.className = 'text-success';
+                        originalProfileData = result.data; // Update original data with server response
+                        populateProfileForm(result.data);
+                        setProfileFieldsReadOnly(true);
+                        // Update localStorage and sidebar if full_name changed
+                        if(employeeData.full_name !== result.data.full_name){
+                            employeeData.full_name = result.data.full_name;
+                            localStorage.setItem('employeeUser', JSON.stringify(employeeData));
+                            document.getElementById('employee-sidebar-name').textContent = result.data.full_name;
+                        }
+                    } else {
+                        profileMessageDiv.textContent = result.error || 'Failed to update profile.';
+                        profileMessageDiv.className = 'text-danger';
+                    }
+                } catch (error) {
+                    console.error('Error saving profile:', error);
+                    profileMessageDiv.textContent = 'Network error saving profile.';
+                    profileMessageDiv.className = 'text-danger';
+                } finally {
+                    profileMessageDiv.style.display = 'block';
+                    saveProfileBtn.disabled = false;
+                    saveProfileBtn.textContent = 'Save Changes';
+                }
+            });
+
+            // Override showSection to load profile data when profile section is shown
+            const originalShowSection = showSection;
+            showSection = function(sectionId) {
+                originalShowSection(sectionId);
+                if (sectionId === 'profile') {
+                    loadProfileData();
+                    setProfileFieldsReadOnly(true); // Ensure it's readonly when first loaded
+                }
+            }
+            // Initial load for the active section
+             if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'profile') {
+                loadProfileData();
+                setProfileFieldsReadOnly(true);
+            }
+
+            // --- Documents Section Logic ---
+            const documentUploadForm = document.getElementById('employee-document-upload-form');
+            const documentsListDiv = document.getElementById('employee-documents-list');
+            const documentUploadMessageDiv = document.getElementById('document-upload-message');
+
+            async function loadEmployeeDocuments() {
+                if (!employeeData || !employeeData.id) return;
+                try {
+                    const response = await fetch('/cgi-bin/employee_documents_api.py', {
+                        method: 'GET',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        renderEmployeeDocuments(result.data);
+                    } else {
+                        documentsListDiv.innerHTML = `<p class="text-danger">${result.error || 'Failed to load documents.'}</p>`;
+                    }
+                } catch (error) {
+                    console.error("Error loading documents:", error);
+                    documentsListDiv.innerHTML = `<p class="text-danger">Network error loading documents.</p>`;
+                }
+            }
+
+            function renderEmployeeDocuments(documents) {
+                if (!documents || documents.length === 0) {
+                    documentsListDiv.innerHTML = '<p>No documents uploaded yet.</p>';
+                    return;
+                }
+                let html = '<ul class="list-group">';
+                documents.forEach(doc => {
+                    html += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="${doc.file_path}" target="_blank">${doc.file_name}</a>
+                                <small class="text-muted d-block">Type: ${doc.document_type} | Uploaded: ${app.formatDate(doc.uploaded_at)}</small>
+                            </div>
+                            <button class="btn btn-danger btn-sm" onclick="deleteEmployeeDocument(${doc.id})">Delete</button>
+                        </li>`;
+                });
+                html += '</ul>';
+                documentsListDiv.innerHTML = html;
+            }
+
+            window.deleteEmployeeDocument = async function(docId) { // Make it global for inline onclick
+                if (!confirm('Are you sure you want to delete this document?')) return;
+                if (!employeeData || !employeeData.id) return;
+
+                try {
+                    const response = await fetch(`/cgi-bin/employee_documents_api.py?id=${docId}`, {
+                        method: 'DELETE',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        app.showAlert('Document deleted successfully.', 'success');
+                        loadEmployeeDocuments(); // Refresh list
+                    } else {
+                        app.showAlert(result.error || 'Failed to delete document.', 'error');
+                    }
+                } catch (error) {
+                    console.error("Error deleting document:", error);
+                    app.showAlert('Network error deleting document.', 'error');
+                }
+            }
+
+            if (documentUploadForm) {
+                documentUploadForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    if (!employeeData || !employeeData.id) return;
+
+                    const formData = new FormData(documentUploadForm);
+                    formData.append('employee_id', employeeData.id.toString()); // Add employee_id for backend
+
+                    documentUploadMessageDiv.style.display = 'none';
+                    const submitBtn = documentUploadForm.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Uploading...';
+
+                    try {
+                        const response = await fetch('/cgi-bin/employee_documents_api.py', {
+                            method: 'POST',
+                            headers: { 'X-Employee-ID': employeeData.id.toString() }, // Also send as header
+                            body: formData
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            documentUploadMessageDiv.textContent = 'Document uploaded successfully!';
+                            documentUploadMessageDiv.className = 'text-success';
+                            documentUploadForm.reset();
+                            loadEmployeeDocuments(); // Refresh list
+                        } else {
+                            documentUploadMessageDiv.textContent = result.error || 'Failed to upload document.';
+                            documentUploadMessageDiv.className = 'text-danger';
+                        }
+                    } catch (error) {
+                        console.error("Error uploading document:", error);
+                        documentUploadMessageDiv.textContent = 'Network error uploading document.';
+                        documentUploadMessageDiv.className = 'text-danger';
+                    } finally {
+                        documentUploadMessageDiv.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Upload Document';
+                    }
+                });
+            }
+
+            // Extend showSection to load documents
+            const originalShowSectionDocuments = showSection; // Assuming showSection is already defined
+            showSection = function(sectionId) {
+                originalShowSectionDocuments(sectionId); // Call previous showSection logic
+                if (sectionId === 'profile') {
+                    loadProfileData();
+                    setProfileFieldsReadOnly(true);
+                } else if (sectionId === 'documents') {
+                    loadEmployeeDocuments();
+                }
+                // Add other section loaders here: handbook, attendance, tasks, leave
+            }
+            // Initial load for documents if it's the active section
+            if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'documents') {
+                loadEmployeeDocuments();
+            }
+
+            // --- Education History Section Logic ---
+            const educationForm = document.getElementById('education-entry-form');
+            const educationListDiv = document.getElementById('education-history-list');
+            const educationMessageDiv = document.getElementById('education-message');
+            const saveEducationBtn = document.getElementById('save-education-btn');
+            const cancelEditEducationBtn = document.getElementById('cancel-edit-education-btn');
+            let currentEditEducationId = null;
+
+            async function loadEducationHistory() {
+                if (!employeeData || !employeeData.id) return;
+                try {
+                    const response = await fetch('/cgi-bin/education_api.py', {
+                        method: 'GET',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        renderEducationHistory(result.data);
+                    } else {
+                        educationListDiv.innerHTML = `<p class="text-danger">${result.error || 'Failed to load education history.'}</p>`;
+                    }
+                } catch (error) {
+                    console.error("Error loading education history:", error);
+                    educationListDiv.innerHTML = `<p class="text-danger">Network error loading education history.</p>`;
+                }
+            }
+
+            function renderEducationHistory(history) {
+                if (!history || history.length === 0) {
+                    educationListDiv.innerHTML = '<p>No education records added yet.</p>';
+                    return;
+                }
+                let html = '<ul class="list-group">';
+                history.forEach(edu => {
+                    html += `
+                        <li class="list-group-item">
+                            <div>
+                                <strong>${edu.degree}</strong> from ${edu.institution_name}
+                                ${edu.year_of_completion ? `(${edu.year_of_completion})` : ''}
+                                <p class="text-muted small">${edu.details || ''}</p>
+                            </div>
+                            <div class="mt-1">
+                                <button class="btn btn-secondary btn-sm" onclick="editEducationRecord(${edu.id})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteEducationRecord(${edu.id})">Delete</button>
+                            </div>
+                        </li>`;
+                });
+                html += '</ul>';
+                educationListDiv.innerHTML = html;
+            }
+
+            window.editEducationRecord = function(id) {
+                if (!employeeData || !employeeData.education_history) return; // Ensure data is loaded if relying on local cache
+                const record = employeeData.education_history.find(edu => edu.id === id); // This assumes education_history is stored in employeeData. Adjust if fetched separately.
+                // For now, let's assume we need to fetch all records to find the one to edit, or that renderEducationHistory populates a client-side array
+                // To simplify, this example will re-fetch if needed or assume `dashboard.data.education_history` exists and is populated by `loadEducationHistory`
+                // This part needs to be connected with how data is stored/accessed on client after load.
+                // Let's assume `loadEducationHistory` stores it in `employeeData.education_history` for this example.
+                // A better approach might be to pass the full record object to editEducationRecord if available from render.
+
+                // For this example, let's find it from the currently rendered list if possible, or re-fetch.
+                // This is a placeholder for robust edit logic.
+                // A more complete solution would fetch the specific record or ensure it's available.
+                // For now, we'll just populate the form:
+                const allRecords = JSON.parse(JSON.stringify(window.dashboardApp.educationHistoryData || [])); // Assuming data is stored in a global/app scope
+                const recordToEdit = allRecords.find(rec => rec.id === id);
+
+                if(recordToEdit){
+                    educationForm.reset();
+                    document.getElementById('education-id').value = recordToEdit.id;
+                    document.getElementById('institution-name').value = recordToEdit.institution_name;
+                    document.getElementById('degree').value = recordToEdit.degree;
+                    document.getElementById('year-of-completion').value = recordToEdit.year_of_completion || '';
+                    document.getElementById('education-details').value = recordToEdit.details || '';
+                    saveEducationBtn.textContent = 'Save Changes';
+                    cancelEditEducationBtn.style.display = 'inline-block';
+                    currentEditEducationId = id;
+                    educationForm.scrollIntoView();
+                } else {
+                    app.showAlert("Could not find record to edit. Please refresh.", "error");
+                }
+            };
+
+            // This is a simplified placeholder for where education data might be stored after fetching.
+            // In a real app, this would be part of a more structured state management.
+            window.dashboardApp = window.dashboardApp || {};
+            window.dashboardApp.educationHistoryData = [];
+
+
+            // Modify renderEducationHistory to store data for editing
+            function renderEducationHistory(history) {
+                window.dashboardApp.educationHistoryData = history; // Store for editing
+                if (!history || history.length === 0) {
+                    educationListDiv.innerHTML = '<p>No education records added yet.</p>';
+                    return;
+                }
+                // ... (rest of rendering logic as before)
+                 let html = '<ul class="list-group">';
+                history.forEach(edu => {
+                    html += `
+                        <li class="list-group-item">
+                            <div>
+                                <strong>${edu.degree}</strong> from ${edu.institution_name}
+                                ${edu.year_of_completion ? `(${edu.year_of_completion})` : ''}
+                                <p class="text-muted small">${edu.details || ''}</p>
+                            </div>
+                            <div class="mt-1">
+                                <button class="btn btn-secondary btn-sm" onclick='editEducationRecord(${JSON.stringify(edu).replace(/'/g, "&apos;")})'>Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteEducationRecord(${edu.id})">Delete</button>
+                            </div>
+                        </li>`;
+                });
+                html += '</ul>';
+                educationListDiv.innerHTML = html;
+            }
+
+            // Updated editEducationRecord to accept the object
+            window.editEducationRecord = function(recordToEdit) {
+                educationForm.reset();
+                document.getElementById('education-id').value = recordToEdit.id;
+                document.getElementById('institution-name').value = recordToEdit.institution_name;
+                document.getElementById('degree').value = recordToEdit.degree;
+                document.getElementById('year-of-completion').value = recordToEdit.year_of_completion || '';
+                document.getElementById('education-details').value = recordToEdit.details || '';
+                saveEducationBtn.textContent = 'Save Changes';
+                cancelEditEducationBtn.style.display = 'inline-block';
+                currentEditEducationId = recordToEdit.id;
+                educationForm.scrollIntoView();
+            };
+
+
+            window.deleteEducationRecord = async function(recordId) {
+                if (!confirm('Are you sure you want to delete this education record?')) return;
+                if (!employeeData || !employeeData.id) return;
+                try {
+                    const response = await fetch(`/cgi-bin/education_api.py?id=${recordId}`, {
+                        method: 'DELETE',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        app.showAlert('Education record deleted.', 'success');
+                        loadEducationHistory();
+                    } else {
+                        app.showAlert(result.error || 'Failed to delete record.', 'error');
+                    }
+                } catch (error) {
+                    console.error("Error deleting education record:", error);
+                    app.showAlert('Network error deleting record.', 'error');
+                }
+            };
+
+            cancelEditEducationBtn.addEventListener('click', function() {
+                educationForm.reset();
+                document.getElementById('education-id').value = '';
+                saveEducationBtn.textContent = 'Add Record';
+                cancelEditEducationBtn.style.display = 'none';
+                currentEditEducationId = null;
+                educationMessageDiv.style.display = 'none';
+            });
+
+            if (educationForm) {
+                educationForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    if (!employeeData || !employeeData.id) return;
+
+                    const formData = new FormData(educationForm);
+                    formData.append('employee_id', employeeData.id.toString());
+
+                    let url = '/cgi-bin/education_api.py';
+                    let method = 'POST';
+
+                    if (currentEditEducationId) {
+                        formData.append('id', currentEditEducationId); // Ensure ID is part of form for PUT
+                        method = 'PUT';
+                    } else {
+                        formData.delete('id'); // Ensure no ID for POST
+                    }
+
+                    educationMessageDiv.style.display = 'none';
+                    saveEducationBtn.disabled = true;
+                    saveEducationBtn.textContent = currentEditEducationId ? 'Saving...' : 'Adding...';
+
+                    try {
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: { 'X-Employee-ID': employeeData.id.toString() },
+                            body: new URLSearchParams(formData) // Send as x-www-form-urlencoded
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            educationMessageDiv.textContent = currentEditEducationId ? 'Record updated!' : 'Record added!';
+                            educationMessageDiv.className = 'text-success';
+                            educationForm.reset();
+                            document.getElementById('education-id').value = '';
+                            saveEducationBtn.textContent = 'Add Record';
+                            cancelEditEducationBtn.style.display = 'none';
+                            currentEditEducationId = null;
+                            loadEducationHistory();
+                        } else {
+                            educationMessageDiv.textContent = result.error || 'Failed to save record.';
+                            educationMessageDiv.className = 'text-danger';
+                        }
+                    } catch (error) {
+                        console.error("Error saving education record:", error);
+                        educationMessageDiv.textContent = 'Network error saving record.';
+                        educationMessageDiv.className = 'text-danger';
+                    } finally {
+                        educationMessageDiv.style.display = 'block';
+                        saveEducationBtn.disabled = false;
+                        // Button text already reset on success or kept for retry on failure
+                    }
+                });
+            }
+
+            // Extend showSection to load education history
+            const originalShowSectionEducation = showSection;
+            showSection = function(sectionId) {
+                originalShowSectionEducation(sectionId);
+                if (sectionId === 'profile') {
+                    loadProfileData();
+                    setProfileFieldsReadOnly(true);
+                } else if (sectionId === 'documents') {
+                    loadEmployeeDocuments();
+                } else if (sectionId === 'education') {
+                    loadEducationHistory();
+                    // Reset education form when section is shown
+                    educationForm.reset();
+                    document.getElementById('education-id').value = '';
+                    saveEducationBtn.textContent = 'Add Record';
+                    cancelEditEducationBtn.style.display = 'none';
+                    currentEditEducationId = null;
+                    educationMessageDiv.style.display = 'none';
+                }
+                // Add other section loaders here: attendance, tasks, leave
+            }
+            // Initial load for education if it's the active section
+            if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'education') {
+                loadEducationHistory();
+            }
+
+            // --- Company Handbook View Logic ---
+            async function loadCompanyHandbookView() {
+                const handbookContentDiv = document.getElementById('dashboard-section-handbook').querySelector('p'); // Target the <p> tag
+                if (!handbookContentDiv) return;
+
+                handbookContentDiv.textContent = 'Loading handbook...';
+                try {
+                    const response = await fetch('/cgi-bin/handbook_api.py'); // GET request by default
+                    const result = await response.json();
+
+                    if (result.success && result.data && result.data.file_path) {
+                        handbookContentDiv.innerHTML = `
+                            <div class="card">
+                                <p>You can view the current Company Handbook by clicking the link below:</p>
+                                <a href="${result.data.file_path}" target="_blank" class="btn btn-primary">View Handbook: ${result.data.file_name}</a>
+                                <p class="text-muted small mt-1">Uploaded on: ${app.formatDate(result.data.uploaded_at)}</p>
+                            </div>`;
+                    } else {
+                        handbookContentDiv.innerHTML = '<div class="card"><p>No Company Handbook is currently available.</p></div>';
+                    }
+                } catch (error) {
+                    console.error("Error loading company handbook:", error);
+                    handbookContentDiv.innerHTML = '<div class="card"><p class="text-danger">Could not load the Company Handbook due to a network error.</p></div>';
+                }
+            }
+
+            // Extend showSection to load handbook
+            const originalShowSectionHandbook = showSection;
+            showSection = function(sectionId) {
+                originalShowSectionHandbook(sectionId);
+                 if (sectionId === 'handbook') {
+                    loadCompanyHandbookView();
+                }
+            }
+            // Initial load for handbook if it's the active section
+            if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'handbook') {
+                loadCompanyHandbookView();
+            }
+
+
+            // --- Attendance Section Logic ---
+            const attendanceStatusDiv = document.getElementById('attendance-status');
+            const punchInBtn = document.getElementById('punch-in-btn');
+            const punchOutBtn = document.getElementById('punch-out-btn');
+            const attendanceMessageDiv = document.getElementById('attendance-message');
+
+            let currentAttendance = null;
+
+            function updateAttendanceUI(attendanceData) {
+                currentAttendance = attendanceData;
+                attendanceMessageDiv.style.display = 'none';
+                attendanceMessageDiv.textContent = '';
+
+                if (attendanceData) {
+                    if (attendanceData.punch_out_time) {
+                        attendanceStatusDiv.innerHTML = `
+                            <p>Punched In: ${app.formatDate(attendanceData.punch_in_time)}</p>
+                            <p>Punched Out: ${app.formatDate(attendanceData.punch_out_time)}</p>
+                            <p class="text-success">Attendance for today is complete.</p>`;
+                        punchInBtn.disabled = true;
+                        punchOutBtn.disabled = true;
+                    } else if (attendanceData.punch_in_time) {
+                        attendanceStatusDiv.innerHTML = `<p>Punched In: ${app.formatDate(attendanceData.punch_in_time)}</p>`;
+                        punchInBtn.disabled = true;
+                        punchOutBtn.disabled = false;
+                    }
+                } else {
+                    attendanceStatusDiv.innerHTML = '<p>Not punched in today.</p>';
+                    punchInBtn.disabled = false;
+                    punchOutBtn.disabled = true;
+                }
+            }
+
+            async function loadAttendanceStatus() {
+                if (!employeeData || !employeeData.id) return;
+                attendanceStatusDiv.innerHTML = '<p>Loading attendance status...</p>';
+                try {
+                    const response = await fetch('/cgi-bin/attendance_api.py', { // GETs today's status
+                        method: 'GET',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        updateAttendanceUI(result.data);
+                    } else {
+                        attendanceStatusDiv.innerHTML = `<p class="text-danger">${result.error || 'Failed to load attendance status.'}</p>`;
+                        punchInBtn.disabled = true;
+                        punchOutBtn.disabled = true;
+                    }
+                } catch (error) {
+                    console.error("Error loading attendance status:", error);
+                    attendanceStatusDiv.innerHTML = `<p class="text-danger">Network error loading status.</p>`;
+                    punchInBtn.disabled = true;
+                    punchOutBtn.disabled = true;
+                }
+            }
+
+            punchInBtn.addEventListener('click', async () => {
+                if (!employeeData || !employeeData.id) return;
+                punchInBtn.disabled = true;
+                punchInBtn.textContent = 'Processing...';
+                try {
+                    const response = await fetch('/cgi-bin/attendance_api.py?action=punch_in', {
+                        method: 'POST',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        updateAttendanceUI(result.data);
+                        attendanceMessageDiv.textContent = 'Punched in successfully!';
+                        attendanceMessageDiv.className = 'text-success text-center mt-2';
+                    } else {
+                        attendanceMessageDiv.textContent = result.error || 'Punch-in failed.';
+                        attendanceMessageDiv.className = 'text-danger text-center mt-2';
+                        punchInBtn.disabled = (currentAttendance && currentAttendance.punch_in_time); // Re-enable if no punch-in recorded yet
+                    }
+                } catch (error) {
+                    console.error("Punch in error:", error);
+                    attendanceMessageDiv.textContent = 'Network error during punch-in.';
+                    attendanceMessageDiv.className = 'text-danger text-center mt-2';
+                    punchInBtn.disabled = (currentAttendance && currentAttendance.punch_in_time);
+                } finally {
+                    attendanceMessageDiv.style.display = 'block';
+                    punchInBtn.textContent = 'Punch In';
+                }
+            });
+
+            punchOutBtn.addEventListener('click', async () => {
+                if (!employeeData || !employeeData.id) return;
+                punchOutBtn.disabled = true;
+                punchOutBtn.textContent = 'Processing...';
+                try {
+                    const response = await fetch('/cgi-bin/attendance_api.py?action=punch_out', {
+                        method: 'POST',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        updateAttendanceUI(result.data);
+                        attendanceMessageDiv.textContent = 'Punched out successfully!';
+                        attendanceMessageDiv.className = 'text-success text-center mt-2';
+                    } else {
+                        attendanceMessageDiv.textContent = result.error || 'Punch-out failed.';
+                        attendanceMessageDiv.className = 'text-danger text-center mt-2';
+                        punchOutBtn.disabled = (currentAttendance && currentAttendance.punch_out_time); // Re-enable if no punch-out recorded
+                    }
+                } catch (error) {
+                    console.error("Punch out error:", error);
+                    attendanceMessageDiv.textContent = 'Network error during punch-out.';
+                    attendanceMessageDiv.className = 'text-danger text-center mt-2';
+                    punchOutBtn.disabled = (currentAttendance && currentAttendance.punch_out_time);
+                } finally {
+                    attendanceMessageDiv.style.display = 'block';
+                    punchOutBtn.textContent = 'Punch Out';
+                }
+            });
+
+
+            // Extend showSection to load attendance status
+            const originalShowSectionAttendance = showSection;
+            showSection = function(sectionId) {
+                originalShowSectionAttendance(sectionId);
+                if (sectionId === 'attendance') {
+                    loadAttendanceStatus();
+                }
+            }
+            // Initial load for attendance if it's the active section
+            if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'attendance') {
+                loadAttendanceStatus();
+            }
+
+            // --- Tasks Section Logic ---
+            const tasksListDiv = document.getElementById('tasks-list');
+
+            async function loadEmployeeTasks() {
+                if (!employeeData || !employeeData.id) return;
+                tasksListDiv.innerHTML = '<p>Loading tasks...</p>';
+                try {
+                    const response = await fetch('/cgi-bin/tasks_api.py', {
+                        method: 'GET',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        renderEmployeeTasks(result.data);
+                    } else {
+                        tasksListDiv.innerHTML = `<p class="text-danger">${result.error || 'Failed to load tasks.'}</p>`;
+                    }
+                } catch (error) {
+                    console.error("Error loading tasks:", error);
+                    tasksListDiv.innerHTML = `<p class="text-danger">Network error loading tasks.</p>`;
+                }
+            }
+
+            function renderEmployeeTasks(tasks) {
+                if (!tasks || tasks.length === 0) {
+                    tasksListDiv.innerHTML = '<p>No tasks assigned to you at the moment.</p>';
+                    return;
+                }
+                let html = '<ul class="list-group">';
+                tasks.forEach(task => {
+                    html += `
+                        <li class="list-group-item">
+                            <h5>${task.title} <span class="badge bg-${getTaskStatusBadge(task.status)}">${task.status}</span></h5>
+                            <p class="small text-muted">Due: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}</p>
+                            <p>${task.description || 'No description.'}</p>
+                            <!-- Future: Allow employee to update status -->
+                        </li>`;
+                });
+                html += '</ul>';
+                tasksListDiv.innerHTML = html;
+            }
+
+            function getTaskStatusBadge(status) {
+                switch (status.toLowerCase()) {
+                    case 'pending': return 'secondary';
+                    case 'in progress': return 'info';
+                    case 'completed': return 'success';
+                    default: return 'light';
+                }
+            }
+
+            // Extend showSection to load tasks
+            const originalShowSectionTasks = showSection;
+            showSection = function(sectionId) {
+                originalShowSectionTasks(sectionId);
+                if (sectionId === 'tasks') {
+                    loadEmployeeTasks();
+                }
+                // Add other section loaders here: leave
+            }
+            // Initial load for tasks if it's the active section
+            if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'tasks') {
+                loadEmployeeTasks();
+            }
+
+            // --- Leave Request Section Logic ---
+            const leaveRequestForm = document.getElementById('leave-request-form');
+            const leaveHistoryListDiv = document.getElementById('leave-history-list');
+            const leaveRequestMessageDiv = document.getElementById('leave-request-message');
+
+            async function loadLeaveHistory() {
+                if (!employeeData || !employeeData.id) return;
+                leaveHistoryListDiv.innerHTML = '<p>Loading leave history...</p>';
+                try {
+                    const response = await fetch('/cgi-bin/leave_api.py', {
+                        method: 'GET',
+                        headers: { 'X-Employee-ID': employeeData.id.toString() }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        renderLeaveHistory(result.data);
+                    } else {
+                        leaveHistoryListDiv.innerHTML = `<p class="text-danger">${result.error || 'Failed to load leave history.'}</p>`;
+                    }
+                } catch (error) {
+                    console.error("Error loading leave history:", error);
+                    leaveHistoryListDiv.innerHTML = `<p class="text-danger">Network error loading leave history.</p>`;
+                }
+            }
+
+            function renderLeaveHistory(history) {
+                if (!history || history.length === 0) {
+                    leaveHistoryListDiv.innerHTML = '<p>No leave requests found.</p>';
+                    return;
+                }
+                let html = '<ul class="list-group">';
+                history.forEach(req => {
+                    html += `
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${new Date(req.start_date).toLocaleDateString()}</strong> to <strong>${new Date(req.end_date).toLocaleDateString()}</strong></span>
+                                <span class="badge bg-${getTaskStatusBadge(req.status)}">${req.status}</span>
+                            </div>
+                            <p class="small text-muted">Reason: ${req.reason}</p>
+                            <p class="small text-muted">Requested: ${app.formatDate(req.requested_at)}</p>
+                        </li>`;
+                });
+                html += '</ul>';
+                leaveHistoryListDiv.innerHTML = html;
+            }
+
+            if (leaveRequestForm) {
+                leaveRequestForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    if (!employeeData || !employeeData.id) return;
+
+                    const formData = new FormData(leaveRequestForm);
+                    // employee_id will be sent via X-Employee-ID header by API, or can be added here if API expects it in body
+                    // formData.append('employee_id', employeeData.id.toString());
+
+                    leaveRequestMessageDiv.style.display = 'none';
+                    const submitBtn = leaveRequestForm.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Submitting...';
+
+                    try {
+                        const response = await fetch('/cgi-bin/leave_api.py', {
+                            method: 'POST',
+                            headers: {
+                                'X-Employee-ID': employeeData.id.toString(),
+                                'Content-Type': 'application/x-www-form-urlencoded' // Explicitly set for URLSearchParams
+                            },
+                            body: new URLSearchParams(formData)
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            leaveRequestMessageDiv.textContent = 'Leave request submitted successfully!';
+                            leaveRequestMessageDiv.className = 'text-success mt-2';
+                            leaveRequestForm.reset();
+                            loadLeaveHistory(); // Refresh list
+                        } else {
+                            leaveRequestMessageDiv.textContent = result.error || 'Failed to submit leave request.';
+                            leaveRequestMessageDiv.className = 'text-danger mt-2';
+                        }
+                    } catch (error) {
+                        console.error("Error submitting leave request:", error);
+                        leaveRequestMessageDiv.textContent = 'Network error submitting request.';
+                        leaveRequestMessageDiv.className = 'text-danger mt-2';
+                    } finally {
+                        leaveRequestMessageDiv.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
+                    }
+                });
+            }
+
+            // Extend showSection to load leave history
+            const originalShowSectionLeave = showSection;
+            showSection = function(sectionId) {
+                originalShowSectionLeave(sectionId);
+                if (sectionId === 'leave') {
+                    loadLeaveHistory();
+                    leaveRequestForm.reset(); // Reset form when section is shown
+                    leaveRequestMessageDiv.style.display = 'none';
+                }
+            }
+            // Initial load for leave if it's the active section
+            if (document.getElementById(`dashboard-section-${initialSection}`).classList.contains('active') && initialSection === 'leave') {
+                loadLeaveHistory();
+            }
+
+        });
+    </script>
+</body>
+</html>

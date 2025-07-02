@@ -39,6 +39,8 @@
                 <button data-section="careers">💼 Career Opportunities</button>
                 <button data-section="resources">📚 Resources</button>
                 <button data-section="products">📦 Product Management</button>
+                <button data-section="employees">🧑‍💼 Employee Accounts</button>
+                <button data-section="settings">⚙️ Company Settings</button>
             </div>
         </div>
 
@@ -83,10 +85,92 @@
                     <p class="text-center">Loading products...</p>
                 </div>
             </div>
+
+            <!-- Employees Section -->
+            <div id="employees-section" class="admin-section">
+                <h2>Employee Account Management</h2>
+                <div id="employees-list">
+                    <p class="text-center">Loading employee accounts...</p>
+                </div>
+            </div>
+
+            <!-- Company Settings Section -->
+            <div id="settings-section" class="admin-section">
+                <h2>Company Settings</h2>
+
+                <!-- Company Handbook Management -->
+                <div class="card mt-2">
+                    <h3>Company Handbook</h3>
+                    <div id="handbook-info" class="mb-2">
+                        <p>Loading handbook information...</p>
+                    </div>
+                    <form id="handbook-upload-form">
+                        <div class="form-group">
+                            <label for="handbook-file">Upload New Handbook (PDF only)</label>
+                            <input type="file" id="handbook-file" name="handbook_file" accept=".pdf" required>
+                        </div>
+                        <button type="submit" class="btn">Upload Handbook</button>
+                    </form>
+                    <button id="delete-handbook-btn" class="btn btn-danger mt-1" style="display:none;">Delete Current Handbook</button>
+                </div>
+
+                <!-- Other settings can go here -->
+            </div>
+
         </div>
     </main>
 
     <!-- Modals -->
+
+    <!-- Employee Modal -->
+    <div id="employee-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="employee-modal-title">Add Employee</h3>
+                <button class="modal-close" onclick="dashboard.closeModal()">&times;</button>
+            </div>
+            <form id="employee-form" onsubmit="handleEmployeeForm(event)">
+                <input type="hidden" id="employee-id" name="id">
+                <div class="form-group">
+                    <label for="employee-full-name">Full Name *</label>
+                    <input type="text" id="employee-full-name" name="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-username">Username *</label>
+                    <input type="text" id="employee-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee-password">Password * (leave blank if not changing for edit)</label>
+                    <input type="password" id="employee-password" name="password">
+                </div>
+                <div class="form-group">
+                    <label for="employee-designation">Designation</label>
+                    <input type="text" id="employee-designation" name="designation">
+                </div>
+                <div class="form-group">
+                    <label for="employee-email">Email</label>
+                    <input type="email" id="employee-email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="employee-phone">Phone</label>
+                    <input type="tel" id="employee-phone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="employee-profile-picture-url">Profile Picture URL</label>
+                    <input type="url" id="employee-profile-picture-url" name="profile_picture_url" placeholder="https://example.com/profile.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="employee-profile-picture-file">Or Upload Profile Picture</label>
+                    <input type="file" id="employee-profile-picture-file" name="profile_picture_file" accept="image/*">
+                    <small class="text-muted">Supported formats: JPG, PNG, GIF (max 2MB). Upload will replace URL.</small>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="employee-form-submit-btn" class="btn">Add Employee</button>
+                    <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
     
     <!-- Team Modal -->
     <div id="team-modal" class="modal">
