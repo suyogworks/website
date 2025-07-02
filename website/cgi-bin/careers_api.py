@@ -66,6 +66,23 @@ def delete_career(career_id):
     
     return affected > 0
 
+def update_career(career_id, data):
+    """Update existing career opportunity"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE careers
+        SET title = ?, description = ?, experience_required = ?, location = ?
+        WHERE id = ?
+    ''', (data['title'], data['description'], data['experience_required'], data['location'], career_id))
+
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    return affected > 0
+
 def parse_form_data():
     """Parse form data from POST request"""
     content_length = int(os.environ.get('CONTENT_LENGTH', 0))
@@ -135,7 +152,7 @@ def main():
     """Main handler function"""
     print("Content-Type: application/json")
     print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS")
+    print("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS") # Added PUT
     print("Access-Control-Allow-Headers: Content-Type")
     print()
     
@@ -148,13 +165,24 @@ def main():
             return
         
         if method == 'GET':
-            # Return all careers
             careers = get_all_careers()
             print(json.dumps({"success": True, "data": careers}))
             
-        elif method == 'POST':
-            # Add new career
+        elif method == 'POST' or method == 'PUT': # Added PUT
             form_data = parse_form_data()
+
+            career_id_to_update = None
+            if method == 'PUT':
+                query_string = os.environ.get('QUERY_STRING', '')
+                if 'id=' in query_string:
+                    try:
+                        career_id_to_update = int(query_string.split('id=')[1].split('&')[0])
+                    except ValueError:
+                        print(json.dumps({"success": False, "error": "Invalid Career ID format for update"}))
+                        return
+                else:
+                    print(json.dumps({"success": False, "error": "Career ID required for update"}))
+                    return
             
             # Extract form fields, handling both list and string formats
             title = ''
@@ -191,21 +219,33 @@ def main():
             if not data['title'] or not data['description'] or not data['location']:
                 print(json.dumps({"success": False, "error": "Title, description, and location are required"}))
                 return
-            
-            career_id = add_career(data)
-            print(json.dumps({"success": True, "id": career_id, "message": "Career opportunity added successfully"}))
+
+            if method == 'POST':
+                career_id = add_career(data)
+                print(json.dumps({"success": True, "id": career_id, "message": "Career opportunity added successfully"}))
+            elif method == 'PUT':
+                if career_id_to_update is None: # Should be caught earlier
+                    print(json.dumps({"success": False, "error": "Career ID required for update"}))
+                    return
+                updated = update_career(career_id_to_update, data)
+                if updated:
+                    print(json.dumps({"success": True, "id": career_id_to_update, "message": "Career opportunity updated successfully"}))
+                else:
+                    print(json.dumps({"success": False, "error": "Failed to update career opportunity or not found"}))
             
         elif method == 'DELETE':
-            # Delete career
             query_string = os.environ.get('QUERY_STRING', '')
             if 'id=' in query_string:
-                career_id = query_string.split('id=')[1].split('&')[0]
-                if delete_career(int(career_id)):
-                    print(json.dumps({"success": True, "message": "Career opportunity deleted successfully"}))
-                else:
-                    print(json.dumps({"error": "Career opportunity not found"}))
+                try:
+                    career_id = int(query_string.split('id=')[1].split('&')[0])
+                    if delete_career(career_id):
+                        print(json.dumps({"success": True, "message": "Career opportunity deleted successfully"}))
+                    else:
+                        print(json.dumps({"success": False, "error": "Career opportunity not found"}))
+                except ValueError:
+                    print(json.dumps({"success": False, "error": "Invalid Career ID format for delete"}))
             else:
-                print(json.dumps({"error": "Career ID required"}))
+                print(json.dumps({"success": False, "error": "Career ID required for delete"}))
         
         else:
             print(json.dumps({"error": "Method not allowed"}))

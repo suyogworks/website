@@ -52,6 +52,34 @@ def add_product(data):
     
     return product_id
 
+def update_product(product_id, data):
+    """Update existing product"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Ensure logo_url is handled correctly, even if not provided in data
+    # If 'logo_url' is in data and is empty, it means the user might want to clear it.
+    # If 'logo_url' is not in data, we should not change the existing one unless specific logic dictates.
+    # For this implementation, we'll update it if provided, otherwise keep existing.
+    # A more robust solution might involve fetching the product first to see if logo_url exists.
+
+    if 'logo_url' in data:
+        cursor.execute('''
+            UPDATE products SET name = ?, description = ?, logo_url = ?
+            WHERE id = ?
+        ''', (data['name'], data['description'], data['logo_url'], product_id))
+    else:
+        # If logo_url is not part of the update data, don't change it
+        cursor.execute('''
+            UPDATE products SET name = ?, description = ?
+            WHERE id = ?
+        ''', (data['name'], data['description'], product_id))
+
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return affected > 0
+
 def delete_product(product_id):
     """Delete product"""
     conn = get_db_connection()
@@ -134,10 +162,10 @@ def main():
     """Main handler function"""
     print("Content-Type: application/json")
     print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS")
+    print("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS") # Added PUT
     print("Access-Control-Allow-Headers: Content-Type")
     print()
-    
+
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
         
@@ -145,16 +173,24 @@ def main():
         if method == 'OPTIONS':
             print(json.dumps({"status": "ok"}))
             return
-        
+
         if method == 'GET':
-            # Return all products
             products = get_all_products()
             print(json.dumps({"success": True, "data": products}))
             
-        elif method == 'POST':
-            # Add new product
+        elif method == 'POST' or method == 'PUT': # Added PUT
             form_data = parse_form_data()
             
+            # For PUT, get product_id from query string
+            product_id_to_update = None
+            if method == 'PUT':
+                query_string = os.environ.get('QUERY_STRING', '')
+                if 'id=' in query_string:
+                    product_id_to_update = int(query_string.split('id=')[1].split('&')[0])
+                else:
+                    print(json.dumps({"success": False, "error": "Product ID required for update"}))
+                    return
+
             # Extract form fields, handling both list and string formats
             name = ''
             description = ''
@@ -181,12 +217,21 @@ def main():
             if not data['name'] or not data['description']:
                 print(json.dumps({"success": False, "error": "Name and description are required"}))
                 return
-            
-            product_id = add_product(data)
-            print(json.dumps({"success": True, "id": product_id, "message": "Product added successfully"}))
+
+            if method == 'POST':
+                product_id = add_product(data)
+                print(json.dumps({"success": True, "id": product_id, "message": "Product added successfully"}))
+            elif method == 'PUT':
+                # Add an update_product function similar to add_product
+                # For now, let's assume update_product exists and works
+                # This part needs to be implemented properly
+                updated = update_product(product_id_to_update, data)
+                if updated:
+                    print(json.dumps({"success": True, "id": product_id_to_update, "message": "Product updated successfully"}))
+                else:
+                    print(json.dumps({"success": False, "error": "Failed to update product or product not found"}))
             
         elif method == 'DELETE':
-            # Delete product
             query_string = os.environ.get('QUERY_STRING', '')
             if 'id=' in query_string:
                 product_id = query_string.split('id=')[1].split('&')[0]

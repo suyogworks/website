@@ -153,29 +153,7 @@ def delete_resource(resource_id):
     
     return affected > 0
 
-def add_contact(data):
-    """Add new contact submission"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        INSERT INTO contacts (name, email, phone, company, subject, message, timestamp) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        data['name'], 
-        data['email'], 
-        data.get('phone', ''), 
-        data.get('company', ''), 
-        data.get('subject', ''), 
-        data['message'],
-        datetime.now().isoformat()
-    ))
-    
-    contact_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    
-    return contact_id
+# Removed add_contact function as it's handled by contacts_api.py
 
 def parse_form_data():
     """Parse form data from POST request"""
@@ -207,38 +185,30 @@ def main():
             print(json.dumps({"success": True, "data": resources}))
             
         elif method == 'POST':
-            # Process contact form submission
-            form_data = parse_form_data()
-            
+            # This script is now primarily for resources, contact submission is handled by contacts_api.py
+            # For example, to add a resource (though this logic is better in resources_api.py)
+            form = cgi.FieldStorage()
             data = {
-                'name': escape(form_data.get('name', [''])[0].strip()),
-                'email': form_data.get('email', [''])[0].strip(),
-                'phone': form_data.get('phone', [''])[0].strip(),
-                'company': escape(form_data.get('company', [''])[0].strip()),
-                'subject': escape(form_data.get('subject', [''])[0].strip()),
-                'message': escape(form_data.get('message', [''])[0].strip())
+                'title': escape(form.getvalue('title', '').strip()),
+                'type': escape(form.getvalue('type', '').strip()),
+                'content': escape(form.getvalue('content', '').strip())
             }
-            
-            # Validate required fields
-            if not data['name'] or not data['email'] or not data['message']:
-                print(json.dumps({"success": False, "error": "Name, email, and message are required"}))
+            if not data['title'] or not data['type'] or not data['content']:
+                print(json.dumps({"success": False, "error": "Title, type, and content are required for resource"}))
                 return
             
-            # Basic email validation
-            if '@' not in data['email'] or '.' not in data['email']:
-                print(json.dumps({"success": False, "error": "Please enter a valid email address"}))
+            valid_types = ['Blog', 'Case Study', 'Technical Aspect']
+            if data['type'] not in valid_types:
+                print(json.dumps({"success": False, "error": f"Resource type must be one of: {', '.join(valid_types)}"}))
                 return
-            
+
             try:
-                contact_id = add_contact(data)
-                print(json.dumps({
-                    "success": True, 
-                    "message": "Thank you for your message! We will get back to you soon.",
-                    "id": contact_id
-                }))
+                file_field = form['file'] if 'file' in form else None
+                resource_id = add_resource(data, file_field) # Assuming add_resource is defined
+                print(json.dumps({"success": True, "id": resource_id, "message": "Resource added successfully via submit_contact.py"}))
             except Exception as e:
-                print(json.dumps({"success": False, "error": "Failed to save your message. Please try again."}))
-        
+                print(json.dumps({"success": False, "error": f"Failed to add resource via submit_contact.py: {str(e)}"}))
+
         elif method == 'PUT':
             # Update existing resource
             query_string = os.environ.get('QUERY_STRING', '')

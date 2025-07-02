@@ -206,7 +206,10 @@ class AdminDashboard {
                         <p>${this.truncateText(career.description, 150)}</p>
                         <p><strong>Experience:</strong> ${career.experience_required} years</p>
                         <p><strong>Location:</strong> ${career.location}</p>
-                        <button class="btn btn-danger" onclick="dashboard.deleteCareer(${career.id})">Delete</button>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+                            <button class="btn btn-secondary btn-sm" onclick="dashboard.showEditCareerModal(${career.id})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="dashboard.deleteCareer(${career.id})">Delete</button>
+                        </div>
                     </div>
                 `).join('')}
             </div>
@@ -375,26 +378,64 @@ class AdminDashboard {
     // Career Management
     showAddCareerModal() {
         this.showModal('career-modal');
-        document.getElementById('career-form').reset();
+        const form = document.getElementById('career-form');
+        form.reset();
+        form.dataset.mode = 'add';
+        form.dataset.careerId = '';
+        document.querySelector('#career-modal h3').textContent = 'Add Career Opportunity';
+        form.querySelector('button[type="submit"]').textContent = 'Add Career Opportunity';
     }
-    
-    async addCareer(formData) {
+
+    showEditCareerModal(id) {
+        const career = this.data.careers.find(c => c.id === id);
+        if (!career) return;
+
+        this.showModal('career-modal');
+        const form = document.getElementById('career-form');
+        form.reset(); // Reset first then populate
+        form.dataset.mode = 'edit';
+        form.dataset.careerId = id;
+
+        document.querySelector('#career-modal h3').textContent = 'Edit Career Opportunity';
+        document.getElementById('career-title').value = career.title;
+        document.getElementById('career-description').value = career.description;
+        document.getElementById('career-experience').value = career.experience_required;
+        document.getElementById('career-location').value = career.location;
+        form.querySelector('button[type="submit"]').textContent = 'Save Changes';
+    }
+
+    async saveCareer(formData) { // Renamed from addCareer
+        const form = document.getElementById('career-form');
+        const mode = form.dataset.mode;
+        const careerId = form.dataset.careerId;
+
+        let url = '/cgi-bin/careers_api.py';
+        let method = 'POST';
+
+        if (mode === 'edit' && careerId) {
+            url += `?id=${careerId}`;
+            method = 'PUT';
+        }
+
         try {
-            const result = await app.apiRequest('/cgi-bin/careers_api.py', {
-                method: 'POST',
+            const result = await app.apiRequest(url, {
+                method: method,
                 body: formData
             });
             
             if (result.success) {
-                app.showAlert('Job opening added successfully', 'success');
+                const message = mode === 'edit' ? 'Job opening updated successfully' : 'Job opening added successfully';
+                app.showAlert(message, 'success');
                 await this.loadCareers();
                 this.renderCareers();
                 this.closeModal();
             } else {
-                app.showAlert(result.error, 'error');
+                app.showAlert(result.error || 'An unknown error occurred', 'error');
             }
         } catch (error) {
-            app.showAlert('Failed to add job opening', 'error');
+            console.error('Failed to save job opening:', error);
+            const message = mode === 'edit' ? 'Failed to update job opening' : 'Failed to add job opening';
+            app.showAlert(message, 'error');
         }
     }
     
@@ -611,7 +652,7 @@ function handleTeamForm(e) {
 function handleCareerForm(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    dashboard.addCareer(formData);
+    dashboard.saveCareer(formData); // Changed from addCareer to saveCareer
 }
 
 function handleResourceForm(e) {

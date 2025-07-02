@@ -135,10 +135,10 @@ def main():
     """Main handler function"""
     print("Content-Type: application/json")
     print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS")
+    print("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS") # Added PUT
     print("Access-Control-Allow-Headers: Content-Type")
     print()
-    
+
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
         
@@ -146,15 +146,23 @@ def main():
         if method == 'OPTIONS':
             print(json.dumps({"status": "ok"}))
             return
-        
+
         if method == 'GET':
-            # Return all resources
             resources = get_all_resources()
             print(json.dumps({"success": True, "data": resources}))
             
-        elif method == 'POST':
-            # Add new resource
+        elif method == 'POST' or method == 'PUT': # Added PUT
             form_data = parse_form_data()
+
+            # For PUT, get resource_id from query string
+            resource_id_to_update = None
+            if method == 'PUT':
+                query_string = os.environ.get('QUERY_STRING', '')
+                if 'id=' in query_string:
+                    resource_id_to_update = int(query_string.split('id=')[1].split('&')[0])
+                else:
+                    print(json.dumps({"success": False, "error": "Resource ID required for update"}))
+                    return
             
             # Extract form fields, handling both list and string formats
             title = ''
@@ -188,12 +196,21 @@ def main():
             if not data['title'] or not data['type'] or not data['content']:
                 print(json.dumps({"success": False, "error": "Title, type, and content are required"}))
                 return
-            
-            resource_id = add_resource(data)
-            print(json.dumps({"success": True, "id": resource_id, "message": "Resource added successfully"}))
+
+            if method == 'POST':
+                resource_id = add_resource(data)
+                print(json.dumps({"success": True, "id": resource_id, "message": "Resource added successfully"}))
+            elif method == 'PUT':
+                if resource_id_to_update is None: # Should have been caught earlier, but double check
+                    print(json.dumps({"success": False, "error": "Resource ID required for update"}))
+                    return
+                updated = update_resource(resource_id_to_update, data)
+                if updated:
+                    print(json.dumps({"success": True, "id": resource_id_to_update, "message": "Resource updated successfully"}))
+                else:
+                    print(json.dumps({"success": False, "error": "Failed to update resource or resource not found"}))
             
         elif method == 'DELETE':
-            # Delete resource
             query_string = os.environ.get('QUERY_STRING', '')
             if 'id=' in query_string:
                 resource_id = query_string.split('id=')[1].split('&')[0]
