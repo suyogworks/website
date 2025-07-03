@@ -6,6 +6,12 @@ import os
 import sys
 from html import escape
 import urllib.parse
+from logger_config import get_logger # Import the logger
+import uuid # For unique filenames, if needed for profile pic path generation
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 # Database setup
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'matrica.db')
@@ -121,113 +127,111 @@ def main():
     print()
 
     method = os.environ.get('REQUEST_METHOD', 'GET')
+    logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
 
     if method == 'OPTIONS':
+        logger.info("Handling OPTIONS request.")
         print(json.dumps({"status": "ok"}))
         sys.exit(0)
 
     employee_id_str = os.environ.get('HTTP_X_EMPLOYEE_ID')
-    if not employee_id_str:
-        # For PUT/POST with FormData, employee_id might be a form field instead of header/query.
-        # cgi.FieldStorage needs to be initialized to check this.
-        # We'll handle this inside the PUT/POST blocks.
-        pass
+    form = cgi.FieldStorage() # Initialize for PUT if needed
 
+    if not employee_id_str:
+        if method in ['PUT', 'POST']: # Check form data for employee_id if not in header
+            employee_id_str = form.getvalue('employee_id')
+        elif method == 'GET': # For GET, try query param if not in header
+            query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
+            employee_id_str = query_params.get('employee_id', [None])[0]
+
+    if not employee_id_str:
+        logger.warning("Authentication required: Employee ID missing.")
+        print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing."}))
+        sys.exit(0)
+
+    try:
+        employee_id = int(employee_id_str)
+    except ValueError:
+        logger.error(f"Invalid Employee ID format: {employee_id_str}")
+        print(json.dumps({"success": False, "error": "Invalid Employee ID format."}))
+        sys.exit(0)
+
+    logger.debug(f"Processing request for employee_id: {employee_id}")
 
     try:
         if method == 'GET':
-            if not employee_id_str: # GET must have employee_id from header or query
-                query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
-                employee_id_str = query_params.get('employee_id', [None])[0]
-
-            if not employee_id_str:
-                 print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing for GET."}))
-                 sys.exit(0)
-            try:
-                employee_id = int(employee_id_str)
-            except ValueError:
-                print(json.dumps({"success": False, "error": "Invalid Employee ID format for GET."}))
-                sys.exit(0)
-
+            logger.info(f"Handling GET request for employee profile ID: {employee_id}")
             profile = get_employee_profile(employee_id)
             if profile:
                 print(json.dumps({"success": True, "data": profile}))
             else:
+                logger.warning(f"Profile not found for employee ID: {employee_id}")
                 print(json.dumps({"success": False, "error": "Profile not found."}))
 
-        elif method == 'PUT': # PUT is now primarily for profile picture and other form data.
-            form = cgi.FieldStorage()
-
-            # Get employee_id from X-Employee-ID header first, then fallback to form field.
-            if not employee_id_str:
-                employee_id_str = form.getvalue('employee_id') # Assuming JS sends employee_id in FormData for PUT
-
-            if not employee_id_str:
-                print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing for PUT."}))
-                sys.exit(0)
-            try:
-                employee_id = int(employee_id_str)
-            except ValueError:
-                print(json.dumps({"success": False, "error": "Invalid Employee ID format for PUT."}))
-                sys.exit(0)
+        elif method == 'PUT':
+            logger.info(f"Handling PUT request for employee profile ID: {employee_id}")
+            # cgi.FieldStorage 'form' is already initialized
 
             data = {
                 'full_name': escape(form.getvalue('full_name', '')),
-                'email': escape(form.getvalue('email', '')),
+                'email': escape(form.getvalue('email', '')), # Email is validated by client, escaping is fine
                 'phone': escape(form.getvalue('phone', '')),
             }
-            # Profile picture URL from text input (if any)
-            profile_picture_url_text = form.getvalue('profile_picture_url')
-
+            # Text input for profile_picture_url is not part of employee self-edit form
+            # It's handled if admin sends it. For employee, only file upload.
 
             profile_pic_file_item = form['profile_picture_file'] if 'profile_picture_file' in form else None
-            new_profile_pic_web_path = None
             file_error = None
 
             if profile_pic_file_item and profile_pic_file_item.filename:
-                # Fetch old picture URL to delete it
+                logger.info(f"Processing profile picture upload for employee ID: {employee_id}")
                 current_profile = get_employee_profile(employee_id)
                 old_pic_path_web = current_profile.get('profile_picture_url') if current_profile else None
 
                 new_profile_pic_web_path, file_error = save_employee_profile_picture(profile_pic_file_item)
                 if file_error:
+                    logger.error(f"File upload error for employee ID {employee_id}: {file_error}")
                     print(json.dumps({"success": False, "error": file_error}))
                     sys.exit(0)
 
-                data['profile_picture_url'] = new_profile_pic_web_path # Prioritize uploaded file
+                data['profile_picture_url'] = new_profile_pic_web_path
+                logger.info(f"New profile picture URL for employee ID {employee_id}: {new_profile_pic_web_path}")
 
-                # Delete old file if it existed and was managed by uploads
                 if old_pic_path_web and old_pic_path_web.startswith('/uploads/employee_profiles/'):
                     old_pic_disk_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), old_pic_path_web.lstrip('/'))
                     if os.path.exists(old_pic_disk_path):
                         try:
                             os.remove(old_pic_disk_path)
+                            logger.info(f"Old profile picture deleted: {old_pic_disk_path}")
                         except OSError as e:
-                            print(f"Warning: Could not delete old profile picture {old_pic_disk_path}: {e}", file=sys.stderr)
-            elif profile_picture_url_text is not None: # If no file uploaded, but URL field was sent
-                 data['profile_picture_url'] = escape(profile_picture_url_text)
+                            logger.warning(f"Could not delete old profile picture {old_pic_disk_path}: {e}")
+            # If no new file, data['profile_picture_url'] will not be set here,
+            # so update_employee_basic_info will preserve existing if 'profile_picture_url' not in data.
+            # This is correct as employee form doesn't send text URL.
 
-
-            if not data.get('full_name') or not data.get('email'): # Basic validation
+            logger.debug(f"Data for profile update (ID {employee_id}): {data}")
+            if not data.get('full_name') or not data.get('email'):
+                 logger.warning(f"Update attempt for employee ID {employee_id} with missing full name or email.")
                  print(json.dumps({"success": False, "error": "Full name and email are required."}))
                  sys.exit(0)
 
-            success, error_msg = update_employee_basic_info(employee_id, data) # This function needs to handle profile_picture_url
+            success, error_msg = update_employee_basic_info(employee_id, data)
 
             if success:
-                updated_profile = get_employee_profile(employee_id)
+                updated_profile = get_employee_profile(employee_id) # Fetch fresh data
+                logger.info(f"Profile for employee ID {employee_id} updated successfully.")
                 print(json.dumps({"success": True, "message": "Profile updated successfully.", "data": updated_profile}))
             else:
+                logger.error(f"Failed to update profile for employee ID {employee_id}: {error_msg}")
                 print(json.dumps({"success": False, "error": error_msg or "Failed to update profile."}))
-
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"success": False, "error": f"Method {method} not allowed."}))
 
     except Exception as e:
-        print(f"Error in employee_profile_api.py: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Unhandled error in employee_profile_api.py: {e}", exc_info=True)
         print(json.dumps({"success": False, "error": "An internal server error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

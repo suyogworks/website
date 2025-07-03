@@ -5,9 +5,14 @@ import sqlite3
 import os
 import sys
 import bcrypt # For password hashing
-import uuid # For unique filenames
+import uuid
 from html import escape
 import urllib.parse
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 # Database setup
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'matrica.db')
@@ -160,94 +165,126 @@ def main():
     print()
 
     method = os.environ.get('REQUEST_METHOD', 'GET')
-    form = cgi.FieldStorage()
+    logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
+    form = cgi.FieldStorage() # Initialize once
 
     if method == 'OPTIONS':
+        logger.info("Handling OPTIONS request.")
         print(json.dumps({"status": "ok"}))
         sys.exit(0)
 
     try:
         if method == 'GET':
+            logger.info("Handling GET request for all employees.")
             employees = get_all_employees()
             print(json.dumps({"success": True, "data": employees}))
 
         elif method == 'POST':
+            logger.info("Handling POST request to add new employee.")
             data = {field: form.getvalue(field) for field in form if field != 'profile_picture_file'}
             profile_pic_item = form['profile_picture_file'] if 'profile_picture_file' in form else None
+            logger.debug(f"Data for POST: { {k:v for k,v in data.items() if k != 'password'} }, ProfilePic: {'Yes' if profile_pic_item and profile_pic_item.filename else 'No'}")
 
             if not data.get('full_name') or not data.get('username') or not data.get('password'):
+                logger.warning("Add employee attempt with missing full name, username, or password.")
                 print(json.dumps({"success": False, "error": "Full name, username, and password are required."}))
                 sys.exit(0)
 
             employee_id, error = add_employee(data, profile_pic_item)
             if error:
+                logger.error(f"Error adding employee: {error}")
                 print(json.dumps({"success": False, "error": error}))
             else:
+                logger.info(f"Employee added successfully with ID: {employee_id}")
                 print(json.dumps({"success": True, "id": employee_id, "message": "Employee added successfully."}))
 
         elif method == 'PUT':
-            employee_id = form.getvalue('id')
-            action = form.getvalue('action') # For query string params like ?action=reset_password
+            logger.info(f"Handling PUT request to update employee or reset password.")
+            # For PUT, ID and action can be in query string or form data. Query string takes precedence for action.
+            query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
+            action = query_params.get('action', [form.getvalue('action')])[0]
+            employee_id_str = query_params.get('id', [form.getvalue('id')])[0]
 
-            if not employee_id and 'id=' in os.environ.get('QUERY_STRING', ''): # For ID in query string
-                 query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
-                 employee_id = query_params.get('id', [None])[0]
-                 action = query_params.get('action', [None])[0]
-
-
-            if not employee_id:
+            if not employee_id_str:
+                logger.warning("Employee ID is required for update/reset password but not provided.")
                 print(json.dumps({"success": False, "error": "Employee ID is required for update."}))
                 sys.exit(0)
 
-            employee_id = int(employee_id)
+            try:
+                employee_id = int(employee_id_str)
+            except ValueError:
+                logger.error(f"Invalid Employee ID format for PUT: {employee_id_str}")
+                print(json.dumps({"success": False, "error": "Invalid Employee ID format."}))
+                sys.exit(0)
+
+            logger.info(f"Action for PUT: {action}, Employee ID: {employee_id}")
 
             if action == 'reset_password':
                 new_password = form.getvalue('password')
+                logger.debug(f"Password reset attempt for employee ID: {employee_id}")
                 if not new_password:
+                    logger.warning(f"Password reset for employee ID {employee_id} failed: New password not provided.")
                     print(json.dumps({"success": False, "error": "New password is required for reset."}))
                     sys.exit(0)
                 if reset_employee_password(employee_id, new_password):
+                    logger.info(f"Password for employee ID {employee_id} reset successfully.")
                     print(json.dumps({"success": True, "message": "Password reset successfully."}))
                 else:
+                    logger.error(f"Failed to reset password for employee ID {employee_id}.")
                     print(json.dumps({"success": False, "error": "Failed to reset password."}))
-            else:
-                data = {field: form.getvalue(field) for field in form if field not in ['id', 'profile_picture_file']}
+            else: # Default PUT action is to update employee details
+                data = {field: form.getvalue(field) for field in form if field not in ['id', 'action', 'profile_picture_file']}
                 profile_pic_item = form['profile_picture_file'] if 'profile_picture_file' in form else None
+                logger.debug(f"Data for employee update (ID {employee_id}): { {k:v for k,v in data.items() if k != 'password'} }, ProfilePic: {'Yes' if profile_pic_item and profile_pic_item.filename else 'No'}")
+
 
                 if not data.get('full_name') or not data.get('username'):
+                     logger.warning(f"Update attempt for employee ID {employee_id} with missing full name or username.")
                      print(json.dumps({"success": False, "error": "Full name and username are required for update."}))
                      sys.exit(0)
 
                 success, error = update_employee(employee_id, data, profile_pic_item)
                 if error:
+                     logger.error(f"Error updating employee ID {employee_id}: {error}")
                      print(json.dumps({"success": False, "error": error}))
                 elif success:
+                    logger.info(f"Employee ID {employee_id} updated successfully.")
                     print(json.dumps({"success": True, "message": "Employee updated successfully."}))
-                else:
+                else: # Should ideally be caught by specific error or success
+                    logger.warning(f"Update for employee ID {employee_id} resulted in no changes or employee not found.")
                     print(json.dumps({"success": False, "error": "Employee not found or no changes made."}))
 
         elif method == 'DELETE':
-            employee_id_str = os.environ.get('QUERY_STRING', '').split('id=')[-1]
+            query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
+            employee_id_str = query_params.get('id', [None])[0]
+            logger.info(f"Handling DELETE request for employee ID: {employee_id_str}")
+
             if not employee_id_str:
+                logger.warning("Employee ID required for delete but not provided.")
                 print(json.dumps({"success": False, "error": "Employee ID is required for delete."}))
                 sys.exit(0)
             try:
                 employee_id = int(employee_id_str)
                 if delete_employee(employee_id):
+                    logger.info(f"Employee ID {employee_id} deleted successfully.")
                     print(json.dumps({"success": True, "message": "Employee deleted successfully."}))
                 else:
+                    logger.warning(f"Employee ID {employee_id} not found for deletion.")
                     print(json.dumps({"success": False, "error": "Employee not found."}))
             except ValueError:
+                logger.error(f"Invalid Employee ID format for DELETE: {employee_id_str}")
                 print(json.dumps({"success": False, "error": "Invalid Employee ID format."}))
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"success": False, "error": f"Method {method} not allowed."}))
 
     except Exception as e:
-        # Log the actual error to server logs
-        print(f"Unhandled error in employee_admin_api.py: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Unhandled server error: {e}", exc_info=True)
+        # print(f"Unhandled error in employee_admin_api.py: {e}", file=sys.stderr) # Redundant if logger writes to stderr
+        # import traceback # Redundant if logger.exception or exc_info=True is used
+        # traceback.print_exc(file=sys.stderr)
         print(json.dumps({"success": False, "error": "An unexpected server error occurred. Please check server logs."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

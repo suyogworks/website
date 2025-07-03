@@ -10,9 +10,15 @@ import sys
 import urllib.parse
 import re
 from html import escape
+from logger_config import get_logger # Import the logger
+
+# Initialize logger for this script
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 def authenticate_user(username, password):
     """Authenticate admin user"""
+    logger.debug(f"Attempting to authenticate user: {username}")
     # Hardcoded credentials for demo purposes
     # In production, this should use a secure database with hashed passwords
     valid_credentials = {
@@ -96,33 +102,30 @@ def main():
     
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
-        
-        # Handle OPTIONS request for CORS
+        logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
+
         if method == 'OPTIONS':
+            logger.info("Handling OPTIONS request.")
             print(json.dumps({"status": "ok"}))
             return
         
         if method == 'POST':
-            # Handle login
+            logger.info("Processing POST request for login.")
             form_data = parse_form_data()
             
-            # Extract username and password, handling both list and string formats
-            username = ''
-            password = ''
+            username_val = form_data.get('username', [''])[0] if isinstance(form_data.get('username'), list) else form_data.get('username', '')
+            username = escape(username_val)
             
-            if 'username' in form_data:
-                username_val = form_data['username']
-                username = escape(username_val[0] if isinstance(username_val, list) else username_val)
-            
-            if 'password' in form_data:
-                password_val = form_data['password']
-                password = password_val[0] if isinstance(password_val, list) else password_val
-            
-            if not username or not password:
+            password_val = form_data.get('password', [''])[0] if isinstance(form_data.get('password'), list) else form_data.get('password', '')
+            # Password is not escaped as it's used for comparison, not display. It's also not logged directly.
+
+            if not username or not password_val:
+                logger.warning("Login attempt with missing username or password.")
                 print(json.dumps({"success": False, "error": "Username and password are required"}))
                 return
             
-            if authenticate_user(username, password):
+            if authenticate_user(username, password_val):
+                logger.info(f"User '{username}' authenticated successfully.")
                 print(json.dumps({
                     "success": True, 
                     "message": "Login successful",
@@ -132,13 +135,17 @@ def main():
                     }
                 }))
             else:
+                logger.warning(f"Failed login attempt for user '{username}'.")
                 print(json.dumps({"success": False, "error": "Invalid username or password"}))
         
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"error": "Method not allowed"}))
             
     except Exception as e:
-        print(json.dumps({"error": "Server error", "details": str(e)}))
+        logger.error(f"Unhandled server error: {e}", exc_info=True)
+        print(json.dumps({"error": "Server error", "details": "An unexpected error occurred."}))
 
 if __name__ == "__main__":
-    main() 
+    logger.info("auth_api.py script started (likely direct execution or misconfiguration).")
+    main()

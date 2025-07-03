@@ -11,6 +11,11 @@ import urllib.parse
 import sqlite3
 from html import escape
 import re
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 def get_db_connection():
     """Get database connection"""
@@ -158,17 +163,20 @@ def main():
     
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
+        logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
         
-        # Handle OPTIONS request for CORS
         if method == 'OPTIONS':
+            logger.info("Handling OPTIONS request.")
             print(json.dumps({"status": "ok"}))
             return
         
         if method == 'GET':
+            logger.info("Handling GET request for all careers.")
             careers = get_all_careers()
             print(json.dumps({"success": True, "data": careers}))
             
-        elif method == 'POST' or method == 'PUT': # Added PUT
+        elif method == 'POST' or method == 'PUT':
+            logger.info(f"Handling {method} request for career.")
             form_data = parse_form_data()
 
             career_id_to_update = None
@@ -177,81 +185,84 @@ def main():
                 if 'id=' in query_string:
                     try:
                         career_id_to_update = int(query_string.split('id=')[1].split('&')[0])
+                        logger.info(f"Career ID for PUT: {career_id_to_update}")
                     except ValueError:
-                        print(json.dumps({"success": False, "error": "Invalid Career ID format for update"}))
+                        logger.error(f"Invalid Career ID for PUT: {query_string.split('id=')[1].split('&')[0]}")
+                        print(json.dumps({"success": False, "error": "Invalid Career ID format for update."}))
                         return
                 else:
-                    print(json.dumps({"success": False, "error": "Career ID required for update"}))
+                    logger.warning("Career ID required for PUT but not provided.")
+                    print(json.dumps({"success": False, "error": "Career ID required for update."}))
                     return
             
-            # Extract form fields, handling both list and string formats
-            title = ''
-            description = ''
+            title = escape(form_data.get('title', [''])[0] if isinstance(form_data.get('title'), list) else form_data.get('title', ''))
+            description = escape(form_data.get('description', [''])[0] if isinstance(form_data.get('description'), list) else form_data.get('description', ''))
+            location = escape(form_data.get('location', [''])[0] if isinstance(form_data.get('location'), list) else form_data.get('location', ''))
+            experience_required_raw = form_data.get('experience_required', ['0'])[0] if isinstance(form_data.get('experience_required'), list) else form_data.get('experience_required', '0')
             experience_required = 0
-            location = ''
-            
-            if 'title' in form_data:
-                title_val = form_data['title']
-                title = escape(title_val[0] if isinstance(title_val, list) else title_val)
-            
-            if 'description' in form_data:
-                description_val = form_data['description']
-                description = escape(description_val[0] if isinstance(description_val, list) else description_val)
-            
-            if 'experience_required' in form_data:
-                experience_val = form_data['experience_required']
-                try:
-                    experience_required = int(experience_val[0] if isinstance(experience_val, list) else experience_val)
-                except (ValueError, TypeError):
-                    experience_required = 0
-            
-            if 'location' in form_data:
-                location_val = form_data['location']
-                location = escape(location_val[0] if isinstance(location_val, list) else location_val)
+            try:
+                experience_required = int(experience_required_raw)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid experience_required value '{experience_required_raw}', defaulting to 0.")
+                experience_required = 0
             
             data = {
-                'title': title,
-                'description': description,
-                'experience_required': experience_required,
-                'location': location
+                'title': title, 'description': description,
+                'experience_required': experience_required, 'location': location
             }
+            logger.debug(f"Parsed data for {method}: {data}")
             
             if not data['title'] or not data['description'] or not data['location']:
-                print(json.dumps({"success": False, "error": "Title, description, and location are required"}))
+                logger.warning(f"{method} attempt with missing title, description, or location.")
+                print(json.dumps({"success": False, "error": "Title, description, and location are required."}))
                 return
 
             if method == 'POST':
                 career_id = add_career(data)
-                print(json.dumps({"success": True, "id": career_id, "message": "Career opportunity added successfully"}))
+                logger.info(f"Career added with ID: {career_id}")
+                print(json.dumps({"success": True, "id": career_id, "message": "Career opportunity added successfully."}))
             elif method == 'PUT':
-                if career_id_to_update is None: # Should be caught earlier
-                    print(json.dumps({"success": False, "error": "Career ID required for update"}))
+                if career_id_to_update is None:
+                    logger.error("Critical: PUT request for career missing ID at decision point.")
+                    print(json.dumps({"success": False, "error": "Career ID required for update."}))
                     return
                 updated = update_career(career_id_to_update, data)
                 if updated:
-                    print(json.dumps({"success": True, "id": career_id_to_update, "message": "Career opportunity updated successfully"}))
+                    logger.info(f"Career with ID: {career_id_to_update} updated successfully.")
+                    print(json.dumps({"success": True, "id": career_id_to_update, "message": "Career opportunity updated successfully."}))
                 else:
-                    print(json.dumps({"success": False, "error": "Failed to update career opportunity or not found"}))
+                    logger.warning(f"Failed to update career with ID: {career_id_to_update} or not found.")
+                    print(json.dumps({"success": False, "error": "Failed to update career opportunity or not found."}))
             
         elif method == 'DELETE':
             query_string = os.environ.get('QUERY_STRING', '')
+            logger.info(f"Handling DELETE request for career. Query: {query_string}")
             if 'id=' in query_string:
                 try:
-                    career_id = int(query_string.split('id=')[1].split('&')[0])
+                    career_id_str = query_string.split('id=')[1].split('&')[0]
+                    career_id = int(career_id_str)
                     if delete_career(career_id):
-                        print(json.dumps({"success": True, "message": "Career opportunity deleted successfully"}))
+                        logger.info(f"Career with ID: {career_id} deleted successfully.")
+                        print(json.dumps({"success": True, "message": "Career opportunity deleted successfully."}))
                     else:
-                        print(json.dumps({"success": False, "error": "Career opportunity not found"}))
+                        logger.warning(f"Career with ID: {career_id} not found for deletion.")
+                        print(json.dumps({"success": False, "error": "Career opportunity not found."}))
                 except ValueError:
-                    print(json.dumps({"success": False, "error": "Invalid Career ID format for delete"}))
+                    logger.error(f"Invalid Career ID for DELETE: {career_id_str}")
+                    print(json.dumps({"success": False, "error": "Invalid Career ID format for delete."}))
             else:
-                print(json.dumps({"success": False, "error": "Career ID required for delete"}))
+                logger.warning("Career ID required for DELETE but not provided.")
+                print(json.dumps({"success": False, "error": "Career ID required for delete."}))
         
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"error": "Method not allowed"}))
             
     except Exception as e:
-        print(json.dumps({"error": "Server error", "details": str(e)}))
+        logger.error(f"Unhandled server error: {e}", exc_info=True)
+        print(json.dumps({"error": "Server error", "details": "An unexpected error occurred."}))
+
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

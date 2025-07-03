@@ -6,6 +6,12 @@ import os
 import sys
 import uuid
 from datetime import datetime
+from logger_config import get_logger # Import the logger
+import traceback # For detailed exception logging
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 # Database setup
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'matrica.db')
@@ -125,55 +131,65 @@ def main():
     print()
 
     method = os.environ.get('REQUEST_METHOD', 'GET')
+    logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
 
     if method == 'OPTIONS':
+        logger.info("Handling OPTIONS request.")
         print(json.dumps({"status": "ok"}))
         sys.exit(0)
 
     try:
         if method == 'GET':
+            logger.info("Handling GET request for company handbook.")
             handbook = get_current_handbook()
             if handbook:
+                logger.info(f"Current handbook found: {handbook.get('file_name')}")
                 print(json.dumps({"success": True, "data": handbook}))
             else:
+                logger.info("No company handbook currently uploaded.")
                 print(json.dumps({"success": True, "data": None, "message": "No handbook uploaded."}))
 
         elif method == 'POST':
+            logger.info("Handling POST request to upload company handbook.")
             form = cgi.FieldStorage()
             file_item = form['handbook_file'] if 'handbook_file' in form else None
 
             if not file_item or not file_item.filename:
+                logger.warning("Handbook upload attempt with no file provided.")
                 print(json.dumps({"success": False, "error": "No handbook file provided."}))
                 sys.exit(0)
 
             try:
+                logger.debug(f"Attempting to save handbook file: {file_item.filename}")
                 web_path, original_name = save_handbook_file(file_item)
+                logger.info(f"Handbook file '{original_name}' saved to {web_path}")
                 add_or_replace_handbook(web_path, original_name)
+                logger.info(f"Handbook record updated in DB for '{original_name}'.")
                 print(json.dumps({"success": True, "message": "Handbook uploaded successfully.", "data": {"file_name": original_name, "file_path": web_path, "uploaded_at": datetime.now().isoformat()}}))
-            except ValueError as ve: # Catch specific errors like invalid file type
+            except ValueError as ve:
+                logger.error(f"Validation error during handbook upload: {ve}")
                 print(json.dumps({"success": False, "error": str(ve)}))
             except Exception as e:
-                print(f"Error during handbook upload: {e}", file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
+                logger.error(f"Error during handbook upload processing: {e}", exc_info=True)
                 print(json.dumps({"success": False, "error": "Failed to process handbook upload."}))
 
-
         elif method == 'DELETE':
+            logger.info("Handling DELETE request for company handbook.")
             if delete_current_handbook():
+                logger.info("Company handbook deleted successfully.")
                 print(json.dumps({"success": True, "message": "Handbook deleted successfully."}))
             else:
-                # This might mean no handbook was there to delete, which isn't strictly an error.
+                logger.info("No handbook found to delete, or already deleted.")
                 print(json.dumps({"success": True, "message": "No handbook found to delete or already deleted."}))
 
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"success": False, "error": f"Method {method} not allowed."}))
 
     except Exception as e:
-        # Log the actual error to server logs
-        print(f"Unhandled error in handbook_api.py: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Unhandled error in {script_name}: {e}", exc_info=True)
         print(json.dumps({"success": False, "error": "An unexpected server error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

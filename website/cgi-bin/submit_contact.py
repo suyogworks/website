@@ -14,6 +14,11 @@ import uuid
 import mimetypes
 import urllib.parse
 from datetime import datetime
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 def get_db_connection():
     """Get database connection"""
@@ -173,96 +178,126 @@ def main():
     
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
+        logger.info(f"Request received by {script_name}: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
         
-        # Handle OPTIONS request for CORS
         if method == 'OPTIONS':
+            logger.info("Handling OPTIONS request.")
             print(json.dumps({"status": "ok"}))
             return
         
+        # Note: Contact submission logic was removed from this script. It now primarily handles resources if called.
+        # This script is largely redundant with resources_api.py and contacts_api.py.
+        # Logging is added for visibility if it's still being invoked.
+
         if method == 'GET':
-            # Return all resources
+            logger.info("Handling GET request (for resources, though resources_api.py is preferred).")
             resources = get_all_resources()
             print(json.dumps({"success": True, "data": resources}))
             
         elif method == 'POST':
-            # This script is now primarily for resources, contact submission is handled by contacts_api.py
-            # For example, to add a resource (though this logic is better in resources_api.py)
+            logger.info("Handling POST request (intended for resources, though resources_api.py is preferred).")
             form = cgi.FieldStorage()
             data = {
                 'title': escape(form.getvalue('title', '').strip()),
                 'type': escape(form.getvalue('type', '').strip()),
                 'content': escape(form.getvalue('content', '').strip())
             }
+            logger.debug(f"Data for POST: {data}")
             if not data['title'] or not data['type'] or not data['content']:
+                logger.warning("Resource POST attempt with missing title, type, or content.")
                 print(json.dumps({"success": False, "error": "Title, type, and content are required for resource"}))
                 return
             
             valid_types = ['Blog', 'Case Study', 'Technical Aspect']
             if data['type'] not in valid_types:
+                logger.warning(f"Invalid resource type: {data['type']}")
                 print(json.dumps({"success": False, "error": f"Resource type must be one of: {', '.join(valid_types)}"}))
                 return
 
             try:
                 file_field = form['file'] if 'file' in form else None
-                resource_id = add_resource(data, file_field) # Assuming add_resource is defined
-                print(json.dumps({"success": True, "id": resource_id, "message": "Resource added successfully via submit_contact.py"}))
+                resource_id = add_resource(data, file_field)
+                logger.info(f"Resource added with ID: {resource_id} via {script_name}")
+                print(json.dumps({"success": True, "id": resource_id, "message": f"Resource added successfully via {script_name}"}))
             except Exception as e:
-                print(json.dumps({"success": False, "error": f"Failed to add resource via submit_contact.py: {str(e)}"}))
+                logger.error(f"Failed to add resource via {script_name}: {e}", exc_info=True)
+                print(json.dumps({"success": False, "error": f"Failed to add resource via {script_name}: {str(e)}"}))
 
         elif method == 'PUT':
-            # Update existing resource
+            logger.info("Handling PUT request (for resources, though resources_api.py is preferred).")
             query_string = os.environ.get('QUERY_STRING', '')
             if 'id=' not in query_string:
-                print(json.dumps({"error": "Resource ID required for update"}))
+                logger.warning("Resource ID required for PUT but not provided.")
+                print(json.dumps({"success": False, "error": "Resource ID required for update"}))
                 return
             
-            resource_id = query_string.split('id=')[1].split('&')[0]
+            try:
+                resource_id_str = query_string.split('id=')[1].split('&')[0]
+                resource_id = int(resource_id_str)
+            except ValueError:
+                logger.error(f"Invalid Resource ID for PUT: {resource_id_str}")
+                print(json.dumps({"success": False, "error": "Invalid Resource ID format."}))
+                return
+
             form = cgi.FieldStorage()
-            
             data = {
                 'title': escape(form.getvalue('title', '').strip()),
                 'type': escape(form.getvalue('type', '').strip()),
                 'content': escape(form.getvalue('content', '').strip())
             }
+            logger.debug(f"Data for PUT (ID {resource_id}): {data}")
             
             if not data['title'] or not data['type'] or not data['content']:
-                print(json.dumps({"error": "Title, type, and content are required"}))
+                logger.warning(f"Resource PUT attempt (ID {resource_id}) with missing fields.")
+                print(json.dumps({"success": False, "error": "Title, type, and content are required"}))
                 return
             
-            # Validate type
             valid_types = ['Blog', 'Case Study', 'Technical Aspect']
             if data['type'] not in valid_types:
-                print(json.dumps({"error": f"Type must be one of: {', '.join(valid_types)}"}))
+                logger.warning(f"Invalid resource type for PUT (ID {resource_id}): {data['type']}")
+                print(json.dumps({"success": False, "error": f"Type must be one of: {', '.join(valid_types)}"}))
                 return
             
             try:
-                # Handle file upload for update
                 file_field = form['file'] if 'file' in form else None
-                if update_resource(int(resource_id), data, file_field):
+                if update_resource(resource_id, data, file_field):
+                    logger.info(f"Resource ID {resource_id} updated successfully via {script_name}.")
                     print(json.dumps({"success": True, "message": "Resource updated successfully"}))
                 else:
-                    print(json.dumps({"error": "Resource not found"}))
+                    logger.warning(f"Resource ID {resource_id} not found for update via {script_name}.")
+                    print(json.dumps({"success": False, "error": "Resource not found"})) # More specific
             except Exception as e:
-                print(json.dumps({"error": f"Failed to update resource: {str(e)}"}))
-                return
+                logger.error(f"Failed to update resource ID {resource_id} via {script_name}: {e}", exc_info=True)
+                print(json.dumps({"success": False, "error": f"Failed to update resource: {str(e)}"}))
             
         elif method == 'DELETE':
-            # Delete resource
+            logger.info("Handling DELETE request (for resources, though resources_api.py is preferred).")
             query_string = os.environ.get('QUERY_STRING', '')
             if 'id=' in query_string:
-                resource_id = query_string.split('id=')[1].split('&')[0]
-                if delete_resource(int(resource_id)):
-                    print(json.dumps({"success": True, "message": "Resource deleted successfully"}))
-                else:
-                    print(json.dumps({"error": "Resource not found"}))
+                try:
+                    resource_id_str = query_string.split('id=')[1].split('&')[0]
+                    resource_id = int(resource_id_str)
+                    if delete_resource(resource_id):
+                        logger.info(f"Resource ID {resource_id} deleted successfully via {script_name}.")
+                        print(json.dumps({"success": True, "message": "Resource deleted successfully"}))
+                    else:
+                        logger.warning(f"Resource ID {resource_id} not found for deletion via {script_name}.")
+                        print(json.dumps({"success": False, "error": "Resource not found"})) # More specific
+                except ValueError:
+                    logger.error(f"Invalid Resource ID for DELETE: {resource_id_str}")
+                    print(json.dumps({"success": False, "error": "Invalid Resource ID format."}))
             else:
-                print(json.dumps({"error": "Resource ID required"}))
+                logger.warning("Resource ID required for DELETE but not provided.")
+                print(json.dumps({"success": False, "error": "Resource ID required"}))
         
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint ({script_name}).")
             print(json.dumps({"error": "Method not allowed"}))
             
     except Exception as e:
-        print(json.dumps({"error": "Server error", "details": str(e)}))
+        logger.error(f"Unhandled server error in {script_name}: {e}", exc_info=True)
+        print(json.dumps({"error": "Server error", "details": "An unexpected error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

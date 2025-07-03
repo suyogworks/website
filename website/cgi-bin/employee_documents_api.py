@@ -7,6 +7,11 @@ import sys
 import uuid
 from datetime import datetime
 import urllib.parse
+from logger_config import get_logger # Import the logger
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 # Database setup
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'matrica.db')
@@ -120,113 +125,116 @@ def main():
     print()
 
     method = os.environ.get('REQUEST_METHOD', 'GET')
+    logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
 
     if method == 'OPTIONS':
+        logger.info("Handling OPTIONS request.")
         print(json.dumps({"status": "ok"}))
         sys.exit(0)
 
     employee_id_str = os.environ.get('HTTP_X_EMPLOYEE_ID')
-    # For POST (file upload), employee_id might come from form data if not in header
-    # For DELETE, it might be in query string for doc_id, but employee_id should still be from header for auth.
+    form = cgi.FieldStorage() # Initialize once for POST
 
-    if not employee_id_str and method != 'POST': # POST will check for employee_id from form if not in header
-         query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
-         employee_id_str = query_params.get('employee_id', [None])[0]
+    if not employee_id_str:
+        if method == 'POST': # For POST, employee_id might be in form data
+            employee_id_str = form.getvalue('employee_id')
+        elif method == 'GET' or method == 'DELETE': # For GET/DELETE, try query param if not in header
+            query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
+            employee_id_str = query_params.get('employee_id', [None])[0]
 
-
-    if not employee_id_str and method != 'POST': # Re-check after attempting query param
+    if not employee_id_str:
+        logger.warning("Authentication required: Employee ID missing.")
         print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing."}))
         sys.exit(0)
 
-    employee_id = None
-    if employee_id_str:
-        try:
-            employee_id = int(employee_id_str)
-        except ValueError:
-            print(json.dumps({"success": False, "error": "Invalid Employee ID format."}))
-            sys.exit(0)
+    try:
+        employee_id = int(employee_id_str)
+    except ValueError:
+        logger.error(f"Invalid Employee ID format: {employee_id_str}")
+        print(json.dumps({"success": False, "error": "Invalid Employee ID format."}))
+        sys.exit(0)
+
+    logger.debug(f"Processing request for employee_id: {employee_id}")
 
     try:
         if method == 'GET':
-            if not employee_id:
-                 print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing for GET."}))
-                 sys.exit(0)
+            logger.info(f"Handling GET request for documents, employee_id: {employee_id}")
             documents = get_employee_documents(employee_id)
             print(json.dumps({"success": True, "data": documents}))
 
         elif method == 'POST':
-            form = cgi.FieldStorage()
-
-            # If employee_id wasn't in header, try to get it from form data
-            if not employee_id:
-                employee_id_form_str = form.getvalue('employee_id')
-                if not employee_id_form_str:
-                    print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing in POST."}))
-                    sys.exit(0)
-                try:
-                    employee_id = int(employee_id_form_str)
-                except ValueError:
-                    print(json.dumps({"success": False, "error": "Invalid Employee ID format in POST form."}))
-                    sys.exit(0)
-
+            logger.info(f"Handling POST request to upload document for employee_id: {employee_id}")
+            # 'form' is already initialized. Employee ID for POST is confirmed above.
             document_type = form.getvalue('document_type')
             file_item = form['document_file'] if 'document_file' in form else None
+            logger.debug(f"Document Type: {document_type}, File: {'Yes' if file_item and file_item.filename else 'No'}")
 
             if not document_type or not file_item or not file_item.filename:
+                logger.warning("Document upload attempt with missing type or file.")
                 print(json.dumps({"success": False, "error": "Document type and file are required."}))
                 sys.exit(0)
 
             web_path, original_name, error_save = save_employee_document(employee_id, file_item, document_type)
             if error_save:
+                logger.error(f"Error saving document file for employee {employee_id}: {error_save}")
                 print(json.dumps({"success": False, "error": error_save}))
                 sys.exit(0)
 
+            logger.info(f"Document file saved for employee {employee_id} at {web_path}")
             doc_db_id, error_db = add_document_record(employee_id, document_type, original_name, web_path)
             if error_db:
-                # Attempt to delete the saved file if DB record fails
-                if web_path:
+                logger.error(f"Error adding document record to DB for employee {employee_id}: {error_db}")
+                if web_path: # Attempt to delete the saved file if DB record fails
                     disk_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), web_path.lstrip('/'))
-                    if os.path.exists(disk_path): os.remove(disk_path)
+                    if os.path.exists(disk_path):
+                        try:
+                            os.remove(disk_path)
+                            logger.info(f"Cleaned up orphaned file: {disk_path}")
+                        except Exception as e_rm:
+                            logger.error(f"Failed to cleanup orphaned file {disk_path}: {e_rm}")
                 print(json.dumps({"success": False, "error": error_db}))
                 sys.exit(0)
 
+            logger.info(f"Document record added to DB with ID: {doc_db_id} for employee {employee_id}")
             print(json.dumps({
-                "success": True,
-                "message": "Document uploaded successfully.",
+                "success": True, "message": "Document uploaded successfully.",
                 "data": {"id": doc_db_id, "document_type": document_type, "file_name": original_name, "file_path": web_path, "uploaded_at": datetime.now().isoformat()}
             }))
 
         elif method == 'DELETE':
-            if not employee_id: # Must have employee_id from header for DELETE authorization
-                 print(json.dumps({"success": False, "error": "Authentication required: Employee ID missing for DELETE."}))
-                 sys.exit(0)
-
+            # Employee ID for authorization is already fetched from header.
             query_params = urllib.parse.parse_qs(os.environ.get('QUERY_STRING', ''))
-            doc_id_str = query_params.get('id', [None])[0] # Document ID to delete
+            doc_id_str = query_params.get('id', [None])[0]
+            logger.info(f"Handling DELETE request for document ID: {doc_id_str}, employee_id: {employee_id}")
+
 
             if not doc_id_str:
+                logger.warning("Document ID required for delete but not provided.")
                 print(json.dumps({"success": False, "error": "Document ID required for delete."}))
                 sys.exit(0)
             try:
                 doc_id = int(doc_id_str)
             except ValueError:
+                logger.error(f"Invalid Document ID format for DELETE: {doc_id_str}")
                 print(json.dumps({"success": False, "error": "Invalid Document ID format."}))
                 sys.exit(0)
 
             success, error_msg = delete_document_record(doc_id, employee_id)
             if success:
+                logger.info(f"Document ID {doc_id} deleted successfully for employee ID {employee_id}.")
                 print(json.dumps({"success": True, "message": "Document deleted successfully."}))
             else:
+                logger.error(f"Failed to delete document ID {doc_id} for employee ID {employee_id}: {error_msg}")
                 print(json.dumps({"success": False, "error": error_msg or "Failed to delete document."}))
 
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"success": False, "error": f"Method {method} not allowed."}))
 
     except Exception as e:
-        print(f"Error in employee_documents_api.py: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        logger.error(f"Unhandled error in {script_name}: {e}", exc_info=True)
         print(json.dumps({"success": False, "error": "An internal server error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()

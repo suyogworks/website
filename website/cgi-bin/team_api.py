@@ -11,6 +11,12 @@ import urllib.parse
 import sqlite3
 import re
 from html import escape
+from logger_config import get_logger # Import the logger
+import uuid # For file uploads, though not used in current version of team_api.py
+
+# Initialize logger
+script_name = os.path.basename(__file__)
+logger = get_logger(script_name)
 
 def get_db_connection():
     """Get database connection"""
@@ -135,80 +141,85 @@ def main():
     """Main handler function"""
     print("Content-Type: application/json")
     print("Access-Control-Allow-Origin: *")
-    print("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS")
+    print("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS") # Added PUT
     print("Access-Control-Allow-Headers: Content-Type")
     print()
     
     try:
         method = os.environ.get('REQUEST_METHOD', 'GET')
-        
-        # Handle OPTIONS request for CORS
+        logger.info(f"Request received: Method={method}, Path={os.environ.get('PATH_INFO', '')}, Query={os.environ.get('QUERY_STRING', '')}")
+
         if method == 'OPTIONS':
+            logger.info("Handling OPTIONS request.")
             print(json.dumps({"status": "ok"}))
             return
         
         if method == 'GET':
-            # Return all team members
+            logger.info("Handling GET request for all team members.")
             team = get_all_team_members()
             print(json.dumps({"success": True, "data": team}))
             
         elif method == 'POST':
-            # Add new team member
-            form_data = parse_form_data()
+            logger.info("Handling POST request for new team member.")
+            form_data = parse_form_data() # This function might need logging if it were more complex
             
-            # Extract form fields, handling both list and string formats
-            name = ''
-            title = ''
-            bio = ''
-            photo_url = ''
-            
-            if 'name' in form_data:
-                name_val = form_data['name']
-                name = escape(name_val[0] if isinstance(name_val, list) else name_val)
-            
-            if 'title' in form_data:
-                title_val = form_data['title']
-                title = escape(title_val[0] if isinstance(title_val, list) else title_val)
-            
-            if 'bio' in form_data:
-                bio_val = form_data['bio']
-                bio = escape(bio_val[0] if isinstance(bio_val, list) else bio_val)
-            
-            if 'photo_url' in form_data:
-                photo_url_val = form_data['photo_url']
-                photo_url = photo_url_val[0] if isinstance(photo_url_val, list) else photo_url_val
-            
-            data = {
-                'name': name,
-                'title': title,
-                'bio': bio,
-                'photo_url': photo_url
-            }
+            name = escape(form_data.get('name', [''])[0] if isinstance(form_data.get('name'), list) else form_data.get('name', ''))
+            title = escape(form_data.get('title', [''])[0] if isinstance(form_data.get('title'), list) else form_data.get('title', ''))
+            bio = escape(form_data.get('bio', [''])[0] if isinstance(form_data.get('bio'), list) else form_data.get('bio', ''))
+            photo_url = form_data.get('photo_url', [''])[0] if isinstance(form_data.get('photo_url'), list) else form_data.get('photo_url', '')
+            # Not escaping photo_url as it's a URL
+
+            data = {'name': name, 'title': title, 'bio': bio, 'photo_url': photo_url}
+            logger.debug(f"Parsed data for POST: {data}")
             
             if not data['name'] or not data['title']:
+                logger.warning("POST attempt with missing name or title for team member.")
                 print(json.dumps({"success": False, "error": "Name and title are required"}))
                 return
             
             member_id = add_team_member(data)
+            logger.info(f"Team member added with ID: {member_id}")
             print(json.dumps({"success": True, "id": member_id, "message": "Team member added successfully"}))
-            
-        elif method == 'DELETE':
-            # Delete team member
+
+        elif method == 'PUT':
+            # PUT for team members is not fully implemented in this version of team_api.py
+            # The dashboard.js might attempt to use it.
+            logger.warning(f"Received PUT request for team member, but update functionality is not implemented in this API version.")
+            # To make it behave somewhat predictably if called:
             query_string = os.environ.get('QUERY_STRING', '')
+            member_id_to_update_str = query_string.split('id=')[-1] if 'id=' in query_string else None
+            # form_data = parse_form_data() # If it were implemented, you'd parse data here
+            # logger.debug(f"Data received for unimplemented PUT: ID={member_id_to_update_str}, Form Data (summary)={ {k:v for k,v in form_data.items() if k != 'photo'} }")
+            print(json.dumps({"success": False, "error": "Update (PUT) for team members is not implemented in this API version."}))
+
+        elif method == 'DELETE':
+            query_string = os.environ.get('QUERY_STRING', '')
+            logger.info(f"Handling DELETE request for team member. Query: {query_string}")
             if 'id=' in query_string:
-                member_id = query_string.split('id=')[1].split('&')[0]
-                if delete_team_member(int(member_id)):
-                    print(json.dumps({"success": True, "message": "Team member deleted successfully"}))
-                else:
-                    print(json.dumps({"error": "Team member not found"}))
+                try:
+                    member_id_str = query_string.split('id=')[1].split('&')[0]
+                    member_id = int(member_id_str)
+                    if delete_team_member(member_id):
+                        logger.info(f"Team member with ID: {member_id} deleted successfully.")
+                        print(json.dumps({"success": True, "message": "Team member deleted successfully"}))
+                    else:
+                        logger.warning(f"Team member with ID: {member_id} not found for deletion.")
+                        print(json.dumps({"success": False, "error": "Team member not found"})) # More specific
+                except ValueError:
+                    logger.error(f"Invalid Member ID for DELETE: {member_id_str}")
+                    print(json.dumps({"success": False, "error": "Invalid Member ID format."}))
             else:
-                print(json.dumps({"error": "Member ID required"}))
+                logger.warning("Member ID required for DELETE but not provided.")
+                print(json.dumps({"success": False, "error": "Member ID required"})) # More specific
         
         else:
+            logger.warning(f"Method {method} not allowed for this endpoint.")
             print(json.dumps({"error": "Method not allowed"}))
             
     except Exception as e:
-        print(json.dumps({"error": "Server error", "details": str(e)}))
+        logger.error(f"Unhandled server error: {e}", exc_info=True)
+        print(json.dumps({"error": "Server error", "details": "An unexpected error occurred."}))
 
 if __name__ == "__main__":
+    logger.info(f"{script_name} script started (likely direct execution or misconfiguration).")
     main()
